@@ -23,9 +23,12 @@ pid_t Fork(void);
 
 void Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int Socket(int domain, int type, int protocol);
+void SetSocketOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 ssize_t Recv(int sockfd, void *buf, size_t len, int flags);
 void Close(int fd);
 ssize_t Send(int sockfd, const void *buf, size_t len, int flags);
+void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+void Listen(int sockfd, int backlog);
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 

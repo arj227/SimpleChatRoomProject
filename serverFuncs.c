@@ -10,59 +10,7 @@
 
 // Optional: Include ctype.h if StringToLower is used
 #include <ctype.h>         // Needed for tolower (if StringToLower is used)
-#define PORT 443
-
-
-/**
- * @brief Creates and configures a server socket for listening to incoming connections.
- * 
- * This function initializes a socket, sets it up with the necessary options, binds it to a
- * specified address and port, and then prepares it to listen for incoming client connections.
- * It is intended for use in setting up a TCP server socket on an IPv4 network.
- * 
- * @param serverSocket Pointer to an integer where the created socket file descriptor will be stored.
- *                     This file descriptor will be used to accept incoming client connections.
- * 
- * @param socketOption Pointer to an integer representing socket options. Typically set to 1 to
- *                     enable certain options, such as address reuse. This function uses it to set
- *                     `SO_REUSEADDR` and `SO_REUSEPORT` on the socket.
- * 
- * @param address Pointer to a `struct sockaddr_in` structure where the function will set the
- *                address family, IP address, and port number. It should be pre-allocated by the
- *                caller. The `sin_family` will be set to `AF_INET`, `sin_addr.s_addr` to `INADDR_ANY`
- *                (all network interfaces), and `sin_port` to the specified `PORT`.
- * 
- * @note This function exits the program with `EXIT_FAILURE` if any step fails, printing an
- *       appropriate error message to `stderr` using `perror`.
- */
-void createSocket(int *serverSocket, int *socketOption, struct sockaddr_in *address) {
-    // Creating socket file descriptor
-    if ((*serverSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // prepares the socket to be bound to the port (changes the settings)
-    if (setsockopt(*serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, socketOption, sizeof(int))) {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
-    }
-    address->sin_family = AF_INET;
-    address->sin_addr.s_addr = INADDR_ANY;
-    address->sin_port = htons(PORT);
-
-    // Forcefully attaching socket to the port 8080
-    if (bind(*serverSocket, (struct sockaddr*) address, sizeof(*address)) < 0) {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // sets the socket to a listening state
-    if (listen(*serverSocket, 3) < 0) {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-}
+#define PORT 8080
 
 /**
  * @brief Converts a string to lowercase.
@@ -140,6 +88,69 @@ void parseArgs(int argc, char const *argv[], char *hexArray) {
 }
 
 
+
+/**
+ * @brief Creates and configures a server socket for listening to incoming connections.
+ * 
+ * This function initializes a socket, sets it up with the necessary options, binds it to a
+ * specified address and port, and then prepares it to listen for incoming client connections.
+ * It is intended for use in setting up a TCP server socket on an IPv4 network.
+ * 
+ * @param serverSocket Pointer to an integer where the created socket file descriptor will be stored.
+ *                     This file descriptor will be used to accept incoming client connections.
+ * 
+ * @param socketOption Pointer to an integer representing socket options. Typically set to 1 to
+ *                     enable certain options, such as address reuse. This function uses it to set
+ *                     `SO_REUSEADDR` and `SO_REUSEPORT` on the socket.
+ * 
+ * @param address Pointer to a `struct sockaddr_in` structure where the function will set the
+ *                address family, IP address, and port number. It should be pre-allocated by the
+ *                caller. The `sin_family` will be set to `AF_INET`, `sin_addr.s_addr` to `INADDR_ANY`
+ *                (all network interfaces), and `sin_port` to the specified `PORT`.
+ * 
+ * @note This function exits the program with `EXIT_FAILURE` if any step fails, printing an
+ *       appropriate error message to `stderr` using `perror`.
+ */
+void createSocket(int *serverSocket, int *socketOption, struct sockaddr_in *address) {
+    // Creating socket file descriptor
+    *serverSocket = Socket(AF_INET, SOCK_STREAM, 0);
+
+    // prepares the socket to be bound to the port (changes the settings)
+    Setsockopt(*serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEADDR, socketOption, sizeof(int));
+    address->sin_family = AF_INET;
+    address->sin_addr.s_addr = INADDR_ANY;
+    address->sin_port = htons(PORT);
+
+    // Forcefully attaching socket to the port 8080
+    Bind(*serverSocket, (struct sockaddr*) address, sizeof(*address));
+
+    // sets the socket to a listening state
+    Listen(*serverSocket, 3);
+}
+
+/**
+ * @brief Retrieves and prints the local IP address of the host machine.
+ * 
+ * This function obtains the hostname of the local machine, retrieves the associated
+ * IP address, and prints it in a readable format. It uses `gethostname` to get the
+ * machine's hostname and `gethostbyname` to obtain the IP address associated with that
+ * hostname. The IP address is then converted to a string using `inet_ntoa` and displayed.
+ * 
+ * @note This function is designed for IPv4 addresses. If the machine has multiple network
+ *       interfaces, this function will print the IP address of the first interface.
+ * 
+ * @error The function exits with a status of `1` if:
+ * - The hostname cannot be obtained (error in `gethostname`).
+ * - Host information cannot be retrieved (error in `gethostbyname`).
+ * 
+ * @example
+ * ```c
+ * int main() {
+ *     printLocalIP();
+ *     return 0;
+ * }
+ * ```
+ */
 void printLocalIP() {
     char hostname[256];
     struct hostent *host_entry;

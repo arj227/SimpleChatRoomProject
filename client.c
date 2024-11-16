@@ -7,10 +7,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main(/*int argc, char const* argv[]*/) {
-    unsigned int port = 443;
+int main(int argc, char const* argv[]) {
+    char ipaddress[32];
+    parseArgs(argc, argv, ipaddress);
+
+    unsigned int port = 8080;
     struct sockaddr_in serverAddress;
-    int socket = connectServer(port, &serverAddress);
+    int socket = connectServer(port, &serverAddress, ipaddress);
 
     printf("Connected to the server.\n");
 

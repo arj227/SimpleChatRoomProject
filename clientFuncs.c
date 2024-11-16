@@ -4,23 +4,102 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h> 
+#include <string.h>
 
 
 
 /**
- * @brief creates a socket and connects to a server
+ * @brief Parses command-line arguments to extract an IP address after the -i flag.
  * 
- * @param port string with port number
- * @param serverAddress sockaddr_in struct
+ * This function checks if the command-line arguments contain the "-i" flag followed by
+ * an IP address string. If the conditions are met, it saves the IP address string to `ipArray`.
+ * The function also ensures the IP address length is within acceptable limits for IPv4.
  * 
- * @note this function has the IP address hard coded in
-*/
-int connectServer(int port, struct sockaddr_in *serverAddress) {
+ * @param argc The count of command-line arguments (from `main`).
+ * @param argv Array of command-line arguments (from `main`).
+ * @param ipArray A pointer to a character array where the IP address will be stored.
+ *                The array should be pre-allocated with sufficient space for the IP 
+ *                address (maximum 15 characters for IPv4).
+ * 
+ * @note This function exits the program if:
+ * - The `-i` flag is not present.
+ * - The IP address is too long (more than 15 characters).
+ * - There are not enough command-line arguments.
+ * 
+ * Example Usage:
+ * ```c
+ * int main(int argc, char const *argv[]) {
+ *     char ipArray[16];  // Allocate enough space for the IP address
+ *     parseArgs(argc, argv, ipArray);
+ *     printf("IP Address: %s\n", ipArray);
+ *     return 0;
+ * }
+ * ```
+ */
+void parseArgs(int argc, char const *argv[], char *ipArray) {
+    const char* ipFlag = "-i";
+
+    if (argc < 3) {
+        fprintf(stderr, "Not enough arguments!\n");
+        exit(1);
+    }
+
+    // Check if the -i flag is present
+    if (strcmp(argv[1], ipFlag) != 0) {
+        fprintf(stderr, "No -i flag found\n");
+        exit(1);
+    }
+
+    // Check if the given IP address is short enough for IPv4
+    if (strlen(argv[2]) > 15) {
+        fprintf(stderr, "IP address too long\n");
+        exit(1);
+    }
+
+    // Copy IP address to ipArray
+    strcpy(ipArray, argv[2]);
+    ipArray[15] = '\0';  // Ensure null termination
+
+    if (ipArray == NULL) {
+        fprintf(stderr, "Failed to save to array\n");
+        exit(1);
+    }
+}
+
+
+
+
+
+/**
+ * @brief Creates a TCP socket and connects to a server at the specified port.
+ * 
+ * This function configures a socket for IPv4 (AF_INET) and TCP (SOCK_STREAM),
+ * binds it to the provided port, and attempts to connect to the server with
+ * the IP address `127.0.1.1`.
+ * 
+ * @param port Integer specifying the port number to connect to.
+ * @param serverAddress Pointer to a `sockaddr_in` structure that is configured
+ *                      with the family, port, and IP address.
+ * 
+ * @return Returns the socket file descriptor if the connection is successful;
+ *         returns a negative value if there’s a failure in socket creation or connection.
+ * 
+ * @note The IP address is hardcoded to `127.0.1.1` (localhost). Modify it to connect
+ *       to other servers.
+ * 
+ * @example
+ * struct sockaddr_in serverAddr;
+ * int clientSocket = connectServer(8080, &serverAddr);
+ * if (clientSocket < 0) {
+ *     fprintf(stderr, "Connection failed\n");
+ * }
+ */
+int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAdress) {
     int portINT = port;
 
     serverAddress->sin_family = AF_INET;
     serverAddress->sin_port = htons(portINT);
-    serverAddress->sin_addr.s_addr = inet_addr("128.180.120.87");
+    serverAddress->sin_addr.s_addr = inet_addr(ipAdress);
 
     int clientSocket;
     clientSocket = Socket(AF_INET, SOCK_STREAM, 0);

@@ -139,6 +139,13 @@ int Socket(int domain, int type, int protocol) {
     return sockfd;
 }
 
+void SetSocketOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+    if (setsockopt(sockfd, level, optname, optval, optlen) == -1) {
+        perror("setsockopt failed");
+        exit(errno);
+    }
+}
+
 void Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     if (connect(sockfd, addr, addrlen) < 0) {
         fprintf(stderr, "connect error: %s\n", strerror(errno));
@@ -173,6 +180,20 @@ ssize_t Send(int sockfd, const void *buf, size_t len, int flags) {
     }
     
     return n;
+}
+
+void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    if (bind(sockfd, addr, addrlen) == -1) {
+        perror("bind failed");
+        exit(errno);
+    }
+}
+
+void Listen(int sockfd, int backlog) {
+    if (listen(sockfd, backlog) == -1) {
+        perror("listen failed");
+        exit(errno);
+    }
 }
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {

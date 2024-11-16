@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h> 
 
-int connectServer(int port, struct sockaddr_in *serverAddress);
+void parseArgs(int argc, char const *argv[], char *ipArray);
+
+int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAdress);
 
 #endif
