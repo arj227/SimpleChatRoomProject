@@ -1,12 +1,17 @@
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#define PORT 8080
+#include <netinet/in.h>   // Needed for sockaddr_in structure
+#include <stdio.h>         // Needed for printf, fprintf, perror
+#include <stdlib.h>        // Needed for exit, EXIT_FAILURE
+#include <string.h>        // Needed for strcmp, strlen, strcpy
+#include <sys/socket.h>    // Needed for socket, bind, listen, setsockopt
+#include <unistd.h>        // Needed for close, if used to close sockets
+#include <arpa/inet.h>
+#include <netdb.h>
 
-#include <ctype.h>
+
+// Optional: Include ctype.h if StringToLower is used
+#include <ctype.h>         // Needed for tolower (if StringToLower is used)
+#define PORT 443
+
 
 /**
  * @brief Creates and configures a server socket for listening to incoming connections.
@@ -38,7 +43,7 @@ void createSocket(int *serverSocket, int *socketOption, struct sockaddr_in *addr
     }
 
     // prepares the socket to be bound to the port (changes the settings)
-    if (setsockopt(*serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, socketOption, sizeof(socketOption))) {
+    if (setsockopt(*serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, socketOption, sizeof(int))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
@@ -47,19 +52,28 @@ void createSocket(int *serverSocket, int *socketOption, struct sockaddr_in *addr
     address->sin_port = htons(PORT);
 
     // Forcefully attaching socket to the port 8080
-    if (bind(*serverSocket, (struct sockaddr*) address, sizeof(address)) < 0) {
+    if (bind(*serverSocket, (struct sockaddr*) address, sizeof(*address)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
 
     // sets the socket to a listening state
-    if (listen(serverSocket, 3) < 0) {
+    if (listen(*serverSocket, 3) < 0) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
 }
 
-
+/**
+ * @brief Converts a string to lowercase.
+ * 
+ * This function takes a string and converts each character to lowercase.
+ * It modifies the string in place, meaning the original string is overwritten
+ * with its lowercase version.
+ * 
+ * @param str A pointer to the string to be converted. This string must be null-terminated,
+ *            and it will be modified by the function to contain only lowercase characters.
+ */
 void StringToLower(char *str) {
     int counter = 0;
     while (str[counter] != '\0') {
@@ -69,51 +83,82 @@ void StringToLower(char *str) {
 }
 
 /**
- * @brief takes argc and argv and saves file names to sorted array
+ * @brief Parses command-line arguments to extract a password after the -p flag.
  * 
- * @param argc argc from cmd line
- * @param argv argv from cmd line
- * @param filename pointer array to strings which are the file names length of 2
+ * This function checks if the command-line arguments contain the "-p" flag followed by
+ * a password string. If the conditions are met, it saves the password string to `hexArray`.
+ * The function also ensures the password length is within acceptable limits.
+ * 
+ * @param argc The count of command-line arguments (from `main`).
+ * @param argv Array of command-line arguments (from `main`).
+ * @param hexArray A pointer to a character array where the password will be stored.
+ *                 The array should be pre-allocated with sufficient space for the
+ *                 password (maximum 31 characters).
+ * 
+ * @note This function exits the program if:
+ * - The `-p` flag is not present.
+ * - The password is too long (more than 31 characters).
+ * - There are not enough command-line arguments.
+ * 
+ * Example Usage:
+ * ```c
+ * int main(int argc, char const *argv[]) {
+ *     char hexArray[32];  // Allocate enough space for the password
+ *     parseArgs(argc, argv, hexArray);
+ *     printf("Password: %s\n", hexArray);
+ *     return 0;
+ * }
+ * ```
  */
-int parseArgs(int argc, char const *argv[], char *hexArray[]) {
-    const char* intVar = "-i";
-    const char* floatVar = "-f";
+void parseArgs(int argc, char const *argv[], char *hexArray) {
+    const char* passwordFlag = "-p";
 
-    if (argc != 3) {
+    if (argc < 3) {
         fprintf(stderr, "not enough arguments!\n");
-        return 1;
+        exit(1);
     }
 
     // checks to see if -i -f is present and then sets it to lowercase
-    if (argv[1][0] != '-') {
-        fprintf(stderr, "No var type given\n");
-        return 1;
-    }
-    char argvVal[8];
-    strncpy(argvVal, argv[1], 7);
-    argvVal[7] = '\0';
-    StringToLower(argvVal);
-    
-    if (strcmp(argvVal, intVar) == 0) { // integer hex logic
-        strcpy(hexArray[0], intVar);
-    } else if (strcmp(argvVal, floatVar) == 0) { // float hex logic
-        strcpy(hexArray[0], floatVar);
+    if (strcmp(argv[1], passwordFlag) != 0) {
+        fprintf(stderr, "no -p flag found\n");
+        exit(1);
     }
 
-    // checks if argv is small enough before copying it to the array
-    if (strlen(argv[2]) < 32) {
-        strcpy(hexArray[1], argv[2]);
-    } else {
+    // checks if the given password is short enough
+    if (strlen(argv[2]) > 31) {
         fprintf(stderr, "string of hexadecimals too long :(");
-        return 1;
+        exit(1);
     }
+    
+    strcpy(hexArray, argv[2]);
+    hexArray[31] = '\0';
 
-    if (hexArray[0] == NULL) {
+    if (hexArray == NULL) {
         fprintf(stderr, "failed to save to array");
-        return 1;
+        exit(1);
     }
-
-    return 0;
 }
 
 
+void printLocalIP() {
+    char hostname[256];
+    struct hostent *host_entry;
+    char *IP;
+
+    // Get the hostname
+    if (gethostname(hostname, sizeof(hostname)) == -1) {
+        perror("gethostname");
+        exit(1);
+    }
+
+    // Get host information
+    host_entry = gethostbyname(hostname);
+    if (host_entry == NULL) {
+        perror("gethostbyname");
+        exit(1);
+    }
+
+    // Convert the IP to a string and print it
+    IP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
+    printf("Local IP address: %s\n", IP);
+}

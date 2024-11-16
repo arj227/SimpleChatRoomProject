@@ -12,6 +12,7 @@
 */
 
 #include "serverFuncs.h"
+#include "syscalls.h"
 
 #include <netinet/in.h>
 #include <stdio.h>
@@ -19,33 +20,32 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#define PORT 8080
+#define PORT 443
 
 int main(int argc, char const* argv[])
 {
-    int serverSocket, new_socket;
-    ssize_t valread;
+    int serverSocket, clientSocket;
     struct sockaddr_in address;
     int socketOption = 1;
     socklen_t addrlen = sizeof(address);
     char buffer[1024] = { 0 };
-    char* hello = "Hello from server";
 
-    creat
+    char password[32];
 
-    if ((new_socket = accept(serverSocket, (struct sockaddr*) &address, &addrlen)) < 0) {
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
+    parseArgs(argc, argv, password);
 
-    valread = read(new_socket, buffer, 1024 - 1); // subtract 1 for the null terminator at the end
+    createSocket(&serverSocket, &socketOption, (struct sockaddr_in*) &address);
+    
+    printLocalIP();
+
+    clientSocket = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
+
+    Read(serverSocket, buffer, 1024 - 1);
     printf("%s\n", buffer);
-    send(new_socket, hello, strlen(hello), 0);
-    printf("Hello message sent\n");
 
     // closing the connected socket
-    close(new_socket);
+    Close(clientSocket);
     // closing the listening socket
-    close(serverSocket);
+    Close(serverSocket);
     return 0;
 }
