@@ -1,6 +1,6 @@
 /** 
  * @file server.c
- * @brief TCP server programing fun project!
+ * @brief TCP server programming fun project!
  * 
  * @author Austin James
  * @date Created: 11/4/24

@@ -66,8 +66,51 @@ void parseArgs(int argc, char const *argv[], char *ipArray) {
     }
 }
 
+/**
+ * @brief Prompts the user to enter a username and password, with error checking.
+ * 
+ * This function reads the username and password from the terminal and performs
+ * basic error checking to ensure input was successful. It limits the input to
+ * prevent buffer overflow.
+ * 
+ * @param username Pointer to a pre-allocated character array for the username.
+ *                 It should be large enough to hold up to 15 characters plus
+ *                 a null terminator (at least 50 bytes).
+ * @param password Pointer to a pre-allocated character array for the password.
+ *                 It should be large enough to hold up to 15 characters plus
+ *                 a null terminator (at least 50 bytes).
+ * 
+ * @return Returns 0 if successful, -1 if input fails or an error occurs.
+ */
+int userLogIn(char* username, char* password, uint8_t *chatRoom) {
+    printf("Enter username: ");
+    if (scanf("%15s", username) != 1) {  // Limit to 15 chars to avoid overflow
+        fprintf(stderr, "Error reading username.\n");
+        return -1;
+    }
 
+    printf("Enter password: ");
+    if (scanf("%15s", password) != 1) {  // Limit to 15 chars to avoid overflow
+        fprintf(stderr, "Error reading password.\n");
+        return -1;
+    }
 
+    // Optional: Clear the newline character if there’s one in the buffer
+    if (strlen(username) == 32 || strlen(password) == 32) {
+        int ch;
+        while ((ch = getchar()) != '\n' && ch != EOF); // Flush remaining input
+    }
+
+    printf("Which room to connect to: ");
+    if (scanf("%d", chatRoom) != 1) {
+        fprintf(stderr, "error reading chatroom selection.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+void assemblyPackage(uint32_t *package, char* username, char* password, int *chatRoom)
 
 
 /**
@@ -94,12 +137,12 @@ void parseArgs(int argc, char const *argv[], char *ipArray) {
  *     fprintf(stderr, "Connection failed\n");
  * }
  */
-int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAdress) {
+int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAddress) {
     int portINT = port;
 
     serverAddress->sin_family = AF_INET;
     serverAddress->sin_port = htons(portINT);
-    serverAddress->sin_addr.s_addr = inet_addr(ipAdress);
+    serverAddress->sin_addr.s_addr = inet_addr(ipAddress);
 
     int clientSocket;
     clientSocket = Socket(AF_INET, SOCK_STREAM, 0);
