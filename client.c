@@ -29,14 +29,14 @@ int main(int argc, char const* argv[]) {
     printf("Connected to the server.\n");
 
     const char *MESSAGE = "Connected";
-    while (1) {
+    int test = 1;
+    while (test == 1) {
         Send(socket, MESSAGE, strlen(MESSAGE), 0);
         printf("Message sent: %s", MESSAGE);
         
         // Sleep for 2 seconds
         sleep(2);
     }
-
 
 
     Close(socket);

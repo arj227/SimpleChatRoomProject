@@ -28,7 +28,7 @@ size_t Read(int fildes, void *buffer, size_t nbytes) {
     rd = read(fildes, buffer, nbytes);
 
     if (rd < 0) {
-        fprintf(stderr, "error reading\n");
+        fprintf(stderr, "error reading: %s\n", strerror(errno));
         exit(errno);
     }
     return rd;

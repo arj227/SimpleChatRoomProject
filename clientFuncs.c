@@ -116,7 +116,9 @@ int userLogIn(char* username, char* password, uint8_t *chatRoom) {
     return 0;
 }
 
-// void assemblyPackage(uint32_t *package, char* username, char* password, int *chatRoom) {}
+void assemblyPackage(uint32_t *package, char* username, char* password, uint8_t *chatRoom) {
+
+}
 
 
 /**
@@ -155,7 +157,7 @@ int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAddress) 
 
     Connect(clientSocket, (struct sockaddr*) serverAddress, sizeof(struct sockaddr_in));
 
-    fprintf(stdout, "Connected to Server!");
+    // fprintf(stdout, "Connected to Server!\n");
 
     return clientSocket;
 }
