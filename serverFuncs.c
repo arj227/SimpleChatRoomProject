@@ -1,3 +1,6 @@
+#include "serverFuncs.h"
+#include "syscalls.h"
+
 #include <netinet/in.h>   // Needed for sockaddr_in structure
 #include <stdio.h>         // Needed for printf, fprintf, perror
 #include <stdlib.h>        // Needed for exit, EXIT_FAILURE

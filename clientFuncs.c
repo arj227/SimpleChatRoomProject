@@ -102,15 +102,21 @@ int userLogIn(char* username, char* password, uint8_t *chatRoom) {
     }
 
     printf("Which room to connect to: ");
-    if (scanf("%d", chatRoom) != 1) {
+    int placeHolder = 0;
+    if (scanf("%d", &placeHolder) != 1) {
         fprintf(stderr, "error reading chatroom selection.\n");
         return -1;
     }
+    if (placeHolder > 255) {
+        fprintf(stderr, "chatroom selected out of bounds.\n");
+        return -1;
+    }
+    *chatRoom = (u_int8_t) placeHolder;
 
     return 0;
 }
 
-void assemblyPackage(uint32_t *package, char* username, char* password, int *chatRoom)
+// void assemblyPackage(uint32_t *package, char* username, char* password, int *chatRoom) {}
 
 
 /**

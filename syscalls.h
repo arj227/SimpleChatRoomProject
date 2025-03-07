@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 
 void *Malloc(size_t size);
- 
+
 size_t Read(int fildes, void *buffer, size_t nbytes);
 size_t Write(int fildes, const void *buffer, size_t nbytes);
 
@@ -23,7 +23,7 @@ pid_t Fork(void);
 
 void Connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int Socket(int domain, int type, int protocol);
-void SetSocketOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+void Setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 ssize_t Recv(int sockfd, void *buf, size_t len, int flags);
 void Close(int fd);
 ssize_t Send(int sockfd, const void *buf, size_t len, int flags);

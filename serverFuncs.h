@@ -1,5 +1,5 @@
 #ifndef SERVERFUNCS_H_
-#define SERVERFUNC_H_
+#define SERVERFUNCS_H_
 
 #include <sys/socket.h>
 #include <netinet/in.h>

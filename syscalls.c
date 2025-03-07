@@ -139,7 +139,7 @@ int Socket(int domain, int type, int protocol) {
     return sockfd;
 }
 
-void SetSocketOpt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+void Setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
     if (setsockopt(sockfd, level, optname, optval, optlen) == -1) {
         perror("setsockopt failed");
         exit(errno);
