@@ -39,10 +39,10 @@ int main(int argc, char const* argv[])
     printLocalIP();
 
     clientSocket = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
-    fprintf(stdout, "Client Accepted!");
+    fprintf(stdout, "Client Accepted!\n");
 
     Read(clientSocket, buffer, 1024 - 1);
-    printf("%s\n", buffer);
+    printf("Package: %s\n", buffer);
 
     // closing the connected socket
     Close(clientSocket);

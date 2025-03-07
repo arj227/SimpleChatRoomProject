@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include <string.h>
-
+#include <inttypes.h>
 
 
 /**
@@ -116,7 +116,54 @@ int userLogIn(char* username, char* password, uint8_t *chatRoom) {
     return 0;
 }
 
-void assemblyPackage(uint32_t *package, char* username, char* password, uint8_t *chatRoom) {
+/**
+ * @brief Packages the username, password, and chatroom for the server
+ * 
+ * @details Package Format (128 total bits):
+ *              - bits 127 - 68 --> username
+ *              - bits 67  - 8  --> password
+ *              - bits 7   - 0  --> chatroom
+ *          the char strings are stored little endien i guess where value 0 is the
+ *          least significant bits of the password section, making unpacking a bit
+ *          easier i think, I haven't written that code yet
+ * 
+ * @param package __uint128_t the package to be sent
+ * @param username char*
+ * @param password char*
+ * @param chatRoom uint8_t
+ */
+void assemblyPackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom) {
+    if (username == NULL || password == NULL || chatRoom == NULL) {
+        fprintf(stderr, "Invalid input: NULL pointer.\n");
+        exit(-1);
+    }
+    // fprintf(stdout, "begin Packaging");
+
+    uint64_t usernameHolder = 0;
+    uint64_t passwordHolder = 0;
+
+    size_t usernameLen = strlen(username);
+    size_t passwordLen = strlen(password);
+
+    if (usernameLen > 15) usernameLen = 15;  // Only up to 15 bytes (60 bits)
+    if (passwordLen > 15) passwordLen = 15;
+
+    // Pack username into the top 60 bits
+    for (size_t i = 0; i < usernameLen; i++) {
+        usernameHolder |= ((__uint128_t)username[i] & 0xFF) << (i * 8);
+    }
+
+    // Pack password into the next 60 bits
+    for (size_t i = 0; i < passwordLen; i++) {
+        passwordHolder |= ((__uint128_t)password[i] & 0xFF) << (i * 8);
+    }
+
+    *package = 0;
+    *package |= (usernameHolder & (((__uint128_t)1 << 60) - 1)) << 68;  // top 60 bits
+    *package |= (passwordHolder & (((__uint128_t)1 << 60) - 1)) << 8;   // middle 60 bits
+    *package |= (uint8_t) *chatRoom;                                      // bottom 8 bits
+
+    // printf("Package: 0x%032" PRIX64 "%016" PRIX64 "\n", (uint64_t)(*package >> 64), (uint64_t)(*package));
 
 }
 
