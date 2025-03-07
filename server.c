@@ -44,6 +44,14 @@ int main(int argc, char const* argv[])
     Read(clientSocket, buffer, 1024 - 1);
     printf("Package: %s\n", buffer);
 
+    __uint128_t package;
+    memcpy(&package, buffer, sizeof(package));
+
+    char username[32];
+    char userPassword[32];
+    u_int8_t chatRoom = 0;
+    unpackage(&package, username, userPassword, &chatRoom);
+
     // closing the connected socket
     Close(clientSocket);
     // closing the listening socket

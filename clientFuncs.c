@@ -83,6 +83,7 @@ void parseArgs(int argc, char const *argv[], char *ipArray) {
  * @return Returns 0 if successful, -1 if input fails or an error occurs.
  */
 int userLogIn(char* username, char* password, uint8_t *chatRoom) {
+    fprintf(stdout, "username must be 7 or less characters all extra characters will be removed\n");
     printf("Enter username: ");
     if (scanf("%15s", username) != 1) {  // Limit to 15 chars to avoid overflow
         fprintf(stderr, "Error reading username.\n");

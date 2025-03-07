@@ -176,3 +176,60 @@ void printLocalIP() {
     IP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
     printf("Local IP address: %s\n", IP);
 }
+
+
+/**
+ * @brief un packs the username, password, and chatroom from the client
+ * 
+ * @details Package Format (128 total bits):
+ *              - bits 127 - 68 --> username
+ *              - bits 67  - 8  --> password
+ *              - bits 7   - 0  --> chatroom
+ *          the char strings are stored little endien i guess where value 0 is the
+ *          least significant bits of the password section, making unpacking a bit
+ *          easier i think, I haven't written that code yet
+ * 
+ * @param package __uint128_t the package to be sent
+ * @param username char*
+ * @param password char*
+ * @patempPackageram chatRoom uint8_t
+ */
+void unpackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom) {
+    // *package = 0;
+    // *package |= (usernameHolder & (((__uint128_t)1 << 60) - 1)) << 68;  // top 60 bits
+    // *package |= (passwordHolder & (((__uint128_t)1 << 60) - 1)) << 8;   // middle 60 bits
+    // *package |= (uint8_t) *chatRoom;                                      // bottom 8 bits
+
+    __uint128_t tempPackage = *package;
+    *chatRoom = (uint8_t) tempPackage & 0xFF;
+    tempPackage = tempPackage >> 8;
+    uint64_t passwordPlaceholder = tempPackage & 0xFFFFFFFFFFFFFFF;
+    tempPackage = tempPackage >> 60;
+    uint64_t usernamePlaceholder = tempPackage & 0xFFFFFFFFFFFFFFF;
+
+    for (size_t i = 0; i < 7; i++) {
+        char currentChar = passwordPlaceholder & 0xFF;
+        passwordPlaceholder >>= 8;
+
+        if (currentChar == '\0') {
+            password[i] = '\0';
+            break;
+        }
+        password[i] = currentChar;
+    }
+    password[7] = '\0';
+
+    for (size_t i = 0; i < 7; i++) {
+        char currentChar = usernamePlaceholder & 0xFF;
+        usernamePlaceholder >>= 8;
+
+        if (currentChar == '\0') {
+            username[i] = '\0';
+            break;
+        }
+        username[i] = currentChar;
+    }
+    username[7] = '\0';
+
+    fprintf(stdout, "Username: %s\nPassword: %s\nChat Room: %hhu\n", username, password, *chatRoom);
+}
