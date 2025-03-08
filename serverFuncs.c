@@ -177,7 +177,6 @@ void printLocalIP() {
     printf("Local IP address: %s\n", IP);
 }
 
-
 /**
  * @brief un packs the username, password, and chatroom from the client
  * 
@@ -192,14 +191,8 @@ void printLocalIP() {
  * @param package __uint128_t the package to be sent
  * @param username char*
  * @param password char*
- * @patempPackageram chatRoom uint8_t
  */
 void unpackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom) {
-    // *package = 0;
-    // *package |= (usernameHolder & (((__uint128_t)1 << 60) - 1)) << 68;  // top 60 bits
-    // *package |= (passwordHolder & (((__uint128_t)1 << 60) - 1)) << 8;   // middle 60 bits
-    // *package |= (uint8_t) *chatRoom;                                      // bottom 8 bits
-
     __uint128_t tempPackage = *package;
     *chatRoom = (uint8_t) tempPackage & 0xFF;
     tempPackage = tempPackage >> 8;
@@ -232,4 +225,19 @@ void unpackage(__uint128_t *package, char* username, char* password, uint8_t *ch
     username[7] = '\0';
 
     fprintf(stdout, "Username: %s\nPassword: %s\nChat Room: %hhu\n", username, password, *chatRoom);
+}
+
+
+void activeChatRoom(int firstClient, int chatRoomNumber) {
+
+    int clients[32];
+    clients[0] = firstClient;
+
+    while(1) {
+        char buffer[32] = "hello from child";
+
+        fprintf(stdout, "Room %d: Sending Message\n", chatRoomNumber);
+        Send(clients[0], buffer, sizeof(buffer), 0);
+        sleep(3);
+    }
 }

@@ -30,15 +30,24 @@ int main(int argc, char const* argv[]) {
     struct sockaddr_in serverAddress;
     int socket = connectServer(port, &serverAddress, ipaddress);
 
-    printf("Connected to the server.\n");
+    printf("Connected to the server...Sending package\n");
+    Send(socket, &package, 128, 0);
+    printf("Package Sent");
 
     int test = 1;
-    while (test == 1) {
-        Send(socket, &package, 128, 0);
-        printf("Package Sent");
-        
-        // Sleep for 2 seconds
-        sleep(2);
+        while (test == 1) {
+        char buffer[32];
+        ssize_t n = Read(socket, buffer, sizeof(buffer) - 1);
+        if (n > 0) {
+            buffer[n] = '\0';  // Null-terminate the received data
+            fprintf(stdout, "from server: %s\n", buffer);
+        } else if (n == 0) {
+            fprintf(stdout, "Server closed the connection.\n");
+            break;
+        } else {
+            perror("Read error");
+            break;
+        }
     }
 
 

@@ -12,5 +12,7 @@ void printLocalIP();
 
 void unpackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom);
 
+void activeChatRoom(int clientSocket, int chatRoomNumber);
+
 
 #endif
