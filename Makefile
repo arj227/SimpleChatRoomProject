@@ -10,11 +10,11 @@ SERVER_EXEC = server
 
 # Source files
 CLIENT_SRC = client.c clientFuncs.c syscalls.c
-SERVER_SRC = server.c serverFuncs.c syscalls.c
+SERVER_SRC = server.c serverFuncs.c syscalls.c serverRoomFuncs.c
 
 # Header files
 CLIENT_HEADERS = clientFuncs.h syscalls.h
-SERVER_HEADERS = serverFuncs.h syscalls.h
+SERVER_HEADERS = serverFuncs.h serverRoomFuncs.h syscalls.h
 
 # Default target
 all: $(CLIENT_EXEC) $(SERVER_EXEC)

@@ -12,6 +12,7 @@
 */
 
 #include "serverFuncs.h"
+#include "serverRoomFuncs.h"
 #include "syscalls.h"
 
 #include <netinet/in.h>

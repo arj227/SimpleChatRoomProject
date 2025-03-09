@@ -228,16 +228,3 @@ void unpackage(__uint128_t *package, char* username, char* password, uint8_t *ch
 }
 
 
-void activeChatRoom(int firstClient, int chatRoomNumber) {
-
-    int clients[32];
-    clients[0] = firstClient;
-
-    while(1) {
-        char buffer[32] = "hello from child";
-
-        fprintf(stdout, "Room %d: Sending Message\n", chatRoomNumber);
-        Send(clients[0], buffer, sizeof(buffer), 0);
-        sleep(3);
-    }
-}
