@@ -37,6 +37,7 @@ int main(int argc, char const* argv[])
     printLocalIP();
 
     pid_t chatRooms[255];
+    int chatRoomsSockets[255];
 
     while (1) {
         clientSocket  = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
@@ -62,16 +63,29 @@ int main(int argc, char const* argv[])
 
         if (chatRooms[chatRoom] == 0) {
             fprintf(stdout, "running fork!\n");
+
+            int socketPairHolder[2];
+            Socketpair(AF_UNIX, SOCK_DGRAM, 0, socketPairHolder);
+
             chatRooms[chatRoom] = Fork();
 
+            // CHILD CODE THATS RUNS CHATROOM
             if (chatRooms[chatRoom] == 0) {
                 fprintf(stdout, "activating new room: %d\n", chatRoom);
                 fprintf(stdout, "----------------------------------\n\n");
                 fflush(stdout);
-                activeChatRoom(clientSocket, chatRoom);
+
+                Close(socketPairHolder[0]);
+                activeChatRoom(clientSocket, chatRoom, socketPairHolder[1]);
                 // !!TODO reap this child :)
+
+            // PARENT CODE AFTER CHATROOM IS CREATED
             } else if (chatRooms[chatRoom] != 0) {
                 fprintf(stdout, "this is the parent\n");
+                Close(socketPairHolder[1]);
+                chatRoomsSockets[chatRoom] = socketPairHolder[0];
+
+            // SHOULD NEVER RUN
             } else {
                 fprintf(stdout, "\n\n\nBig Fail\n\n\n");
             }

@@ -31,5 +31,6 @@ void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 void Listen(int sockfd, int backlog);
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int Socketpair(int domain, int type, int protocol, int sv[2]);
 
 #endif

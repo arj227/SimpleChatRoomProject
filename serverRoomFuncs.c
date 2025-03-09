@@ -9,6 +9,7 @@
 #include <unistd.h>        // Needed for close, if used to close sockets
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <fcntl.h>
 
 
 /**
@@ -24,8 +25,7 @@
  * @param firstClient int socket for the client that asked to open the room
  * @param chatRoomNumber int what room number this is, used mostly for terminal prints
  */
-void activeChatRoom(int firstClient, int chatRoomNumber) {
-
+void activeChatRoom(int firstClient, int chatRoomNumber, int socketWithParent) {
     int clients[32];
     clients[0] = firstClient;
 
@@ -38,6 +38,74 @@ void activeChatRoom(int firstClient, int chatRoomNumber) {
     }
 }
 
-int joinRoom(int askingClient) {
+int joinRoom(int chatRoomSocket, int clientToSend) {
+    struct msghdr message;
+    memset(&message, 0, sizeof(message));
+
+    // Dummy data required for sendmsg().
+    char buffer[1] = {0};
+    struct iovec iov;
+    iov.iov_base = buffer;
+    iov.iov_len = sizeof(buffer);
+    message.msg_iov = &iov;
+    message.msg_iovlen = 1;
+
+    // Allocate buffer for the ancillary data.
+    char ancillaryBuffer[CMSG_SPACE(sizeof(clientToSend))];
+    memset(ancillaryBuffer, 0, sizeof(ancillaryBuffer));
+    message.msg_control = ancillaryBuffer;
+    message.msg_controllen = sizeof(ancillaryBuffer);
+
+    // Set up the ancillary data header.
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&message);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(clientToSend));
+    memcpy(CMSG_DATA(cmsg), &clientToSend, sizeof(clientToSend));
+
+    // Send the message.
+    if (sendmsg(chatRoomSocket, &message, 0) < 0) {
+        perror("sendmsg");
+        return -1;
+    }
     return 0;
+}
+
+
+int recieveNewClient(int parentSocket) {
+    struct msghdr message;
+    memset(&message, 0, sizeof(message));
+
+    char buffer[1];
+    struct iovec iov;
+    iov.iov_base = buffer;
+    iov.iov_len = sizeof(buffer);
+    message.msg_iov = &iov;
+    message.msg_iovlen = 1;
+
+    // Buffer for the ancillary data.
+    char ancillaryBuffer[CMSG_SPACE(sizeof(int))];
+    memset(ancillaryBuffer, 0, sizeof(ancillaryBuffer));
+    message.msg_control = ancillaryBuffer;
+    message.msg_controllen = sizeof(ancillaryBuffer);
+
+    if (recvmsg(socket, &message, 0) < 0) {
+        perror("recvmsg");
+        return -1;
+    }
+
+    // Retrieve the file descriptor from the ancillary data.
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&message);
+    if (cmsg == NULL) {
+        fprintf(stderr, "No ancillary data received\n");
+        return -1;
+    }
+    if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS) {
+        fprintf(stderr, "Invalid ancillary data received\n");
+        return -1;
+    }
+
+    int fd_received;
+    memcpy(&fd_received, CMSG_DATA(cmsg), sizeof(fd_received));
+    return fd_received;
 }
