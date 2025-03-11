@@ -247,7 +247,7 @@ void sendToServer(int socket) {
 }
 
 void userCommand(char *buffer, int socket) {
-    if (strcmp(buffer, "$exit")) {
+    if (strcmp(buffer, "$exit") == 0) {
         Send(socket, buffer, sizeof(buffer), 0);
         exit(0);
     }

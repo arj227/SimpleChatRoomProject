@@ -54,7 +54,13 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
         if (FD_ISSET(socketWithParent, &selectClient)) {
             fprintf(stdout, "%d: recieved new user\n", chatRoomNumber);
             Read(socketWithParent, &clients[CNC], sizeof(struct ClientData));
-            fprintf(stdout, "%d: new user: %s\n", clients[CNC].chatRoom, clients[CNC].username);
+
+
+            fprintf(stdout, "%d: firstClient: %s -- %s -- %d", clients[CNC].chatRoom, clients[CNC].username, 
+                clients[CNC].userPassword, clients[CNC].clientSocket);
+            fprintf(stdout, "%d: firstClient: %s -- %s -- %d\n", firstClient->chatRoom, firstClient->username, 
+                firstClient->userPassword, firstClient->clientSocket);
+
             CNC ++;
             fprintf(stdout, "----------------------------------\n\n");
             continue;
@@ -116,14 +122,43 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
     return maxfd;
 }
 
+
+/**
+ * @brief Reads data from a client socket and handles client disconnection.
+ *
+ * @details
+ * This function attempts to read data from the socket associated with the client at index
+ * whatClient within the clients array. The read operation is performed using the custom Read()
+ * function and assumes the data is null-terminated. After reading, it prints the message along
+ * with the client’s chat room number and username.
+ *
+ * If no data is read (n <= 0) or if the client sends the special exit command "$exit", the function
+ * handles the disconnection by:
+ *  - Optionally echoing back the "$exit" command if it was received.
+ *  - Closing the client’s socket.
+ *  - Removing the client from the clients array by shifting subsequent client entries to fill
+ *    the gap.
+ *  - Decrementing the client count (*CNC).
+ *  - If no clients remain (i.e. *CNC becomes 0), it closes the chat room by calling exit(0).
+ *
+ * @param clients An array of ClientData structures representing the connected clients.
+ * @param whatClient The index of the client in the clients array from which data is to be read.
+ * @param CNC Pointer to an integer representing the current number of clients.
+ *
+ * @note The function expects the client socket in clients[whatClient] to be valid and that the
+ *       Read() and Send() functions work similarly to the standard read() and send() functions.
+ * @note This function modifies the clients array and the CNC variable if a client disconnects.
+ * @note The function exits the process if there are no more clients in the chat room.
+ */
 void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
     int chatRoom = clients[0].chatRoom;
     char buffer[32];
     ssize_t n = Read(clients[whatClient].clientSocket, buffer, sizeof(buffer) - 1);
+    
 
-    if (n <= 0 || strcmp(buffer, "$exit")) {
+    if (n <= 0 || strcmp(buffer, "$exit") == 0) {
         fprintf(stdout, "%d: user (%s) is exiting\n", clients[whatClient].chatRoom, clients[whatClient].username);
-        if (strcmp(buffer, "$exit")) {
+        if (strcmp(buffer, "$exit") == 0) {
             Send(clients[whatClient].clientSocket, buffer, sizeof(buffer), 0);
         }
         close(clients[whatClient].clientSocket);
@@ -142,14 +177,12 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
             (*CNC) --;
         }
 
-        fprintf(stdout, "DEBUG: CNC = %d\n", *CNC);
-
+        // fprintf(stdout, "DEBUG: CNC = %d\n", *CNC);
         if (*CNC == 0) {
             fprintf(stdout, "%d: closing room, no more users\n", chatRoom);
             exit(0);
         }
     }
-
     buffer[n] = '\0';
-    fprintf(stdout, "from %s: %s\n", clients[whatClient].username, buffer);
+    fprintf(stdout, "%d: from %s: %s\n",clients[whatClient].chatRoom, clients[whatClient].username, buffer);
 }
