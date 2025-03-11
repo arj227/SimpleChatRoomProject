@@ -35,7 +35,7 @@ int main(int argc, char const* argv[]) {
     printf("Package Sent\n");
 
     int test = 1;
-        while (test == 1) {
+    while (test == 1) {
         char buffer[32];
         ssize_t n = Read(socket, buffer, sizeof(buffer) - 1);
         if (n > 0) {

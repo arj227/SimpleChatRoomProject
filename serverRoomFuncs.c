@@ -36,15 +36,39 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
     }
     clients[0] = *firstClient;
 
+    //SET UP STRUCTURE FOR SELECT()
+    fd_set selectClient;
+    FD_ZERO(&selectClient);
+    FD_SET(socketWithParent, &selectClient);
+    FD_SET(clients[0].clientSocket, &selectClient);
+    int maxfd = (socketWithParent > clients[0].clientSocket ? socketWithParent : clients[0].clientSocket) + 1;
+
     while(1) {
-        // char buffer[32] = "hello from child";
-        // fprintf(stdout, "Room %d: Sending Message\n", chatRoomNumber);
-        // Send(socketWithParent, buffer, sizeof(buffer), 0);
-        Read(socketWithParent, &clients[CNC], sizeof(struct ClientData));
 
-        fprintf(stdout, "%d: new Client username: %s\n", chatRoomNumber, clients[CNC].username);
+        int selectReturnVal = select(maxfd, &selectClient, NULL, NULL, NULL);
 
-        sleep(3);
+        if (selectReturnVal == -1) {
+            fprintf(stderr, "select Failure: %d\n", EXIT_FAILURE);
+            exit(EXIT_FAILURE);
+        } else if (selectReturnVal == 0) {
+            // shouldn't happen
+            fprintf(stderr, "timeout\b");
+            continue;
+        }
+
+        if (FD_ISSET(socketWithParent, &selectClient)) {
+            fprintf(stdout, "%d: parent has sent info\n", chatRoomNumber);
+            addNewClient(CNC, &clients, &selectClient);
+        }
+
+        for (int i = 0; i < CNC; i ++) {
+            if (FD_ISSET(clients[i].clientSocket, &selectClient)) {
+                fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
+            }
+        }
+
+
+        sleep(1);
     }
 }
 
@@ -59,4 +83,10 @@ int joinRoom(int chatRoomSocket, struct ClientData *client) {
     fprintf(stdout, "sending new client\n");
     Send(chatRoomSocket, client, sizeof(struct ClientData), 0);
     return 0;
+}
+
+
+
+void addNewClient(int CNC, struct ClientData *clients, fd_set *selectClient) {
+
 }
