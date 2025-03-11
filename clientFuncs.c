@@ -1,4 +1,5 @@
 #include "syscalls.h"
+#include "clientFuncs.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -217,6 +218,11 @@ int readFromServer(int socket) {
     ssize_t n = Read(socket, buffer, sizeof(buffer) - 1);
     if (n > 0) {
         buffer[n] = '\0';  // Null-terminate the received data
+
+        if (buffer[0] == '$') {
+            exit(0);
+        }
+
         fprintf(stdout, "\nfrom server: %s\n--> ", buffer);
         return 0;
     } else if (n == 0) {
@@ -233,5 +239,16 @@ void sendToServer(int socket) {
     fprintf(stdout, "--> ");
     scanf("%31s", buffer);
 
+    if (buffer[0] == '$') {
+        userCommand(buffer, socket);
+    }
+
     Send(socket, &buffer, sizeof(buffer), 0);
+}
+
+void userCommand(char *buffer, int socket) {
+    if (strcmp(buffer, "$exit")) {
+        Send(socket, buffer, sizeof(buffer), 0);
+        exit(0);
+    }
 }

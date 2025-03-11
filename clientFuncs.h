@@ -18,5 +18,6 @@ int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAdress);
 
 int readFromServer(int socket);
 void sendToServer(int socket);
+void userCommand(char *buffer, int socket);
 
 #endif
