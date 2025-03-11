@@ -210,7 +210,9 @@ int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 
 int Socketpair(int domain, int type, int protocol, int sv[2]) {
     int n;
-    if ((n = socketpair(domain, type, protocol, sv)) < 0)
-        err_sys("socketpair error");
+    if ((n = socketpair(domain, type, protocol, sv)) != 0) {
+        fprintf(stderr, "socketpair error: %d", errno);
+        exit(errno);
+    }
     return n;
 }

@@ -43,7 +43,6 @@ int main(int argc, char const* argv[])
         clientSocket  = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
         fprintf(stdout, "\n\n----------------------------------\nClient Found!\n");
 
-
         Read(clientSocket, buffer, 1024 - 1);
         __uint128_t package;
         memcpy(&package, buffer, sizeof(package));

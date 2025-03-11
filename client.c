@@ -32,7 +32,7 @@ int main(int argc, char const* argv[]) {
 
     printf("Connected to the server...Sending package\n");
     Send(socket, &package, 128, 0);
-    printf("Package Sent");
+    printf("Package Sent\n");
 
     int test = 1;
         while (test == 1) {
