@@ -57,13 +57,16 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
         }
 
         if (FD_ISSET(socketWithParent, &selectClient)) {
-            fprintf(stdout, "%d: parent has sent info\n", chatRoomNumber);
-            addNewClient(CNC, &clients, &selectClient);
+            fprintf(stdout, "%d: recieved new user\n", chatRoomNumber);
+            addNewClient(&CNC, clients, &selectClient, socketWithParent);
+            maxfd = calculateMaxfd(clients, socketWithParent, CNC);
+            fprintf(stdout, "----------------------------------\n\n");
         }
 
         for (int i = 0; i < CNC; i ++) {
             if (FD_ISSET(clients[i].clientSocket, &selectClient)) {
                 fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
+                readFromClient(&clients[i]);
             }
         }
 
@@ -86,7 +89,37 @@ int joinRoom(int chatRoomSocket, struct ClientData *client) {
 }
 
 
+/**
+ * @brief adds new client to the fd_set structure for the select()
+ */
+void addNewClient(int *CNC, struct ClientData *clients, fd_set *selectClient, int socketWithParent) {
+    Read(socketWithParent, &clients[*CNC], sizeof(struct ClientData));
+    fprintf(stdout, "%d: new user: %s\n", clients[*CNC].chatRoom, clients[*CNC].username);
 
-void addNewClient(int CNC, struct ClientData *clients, fd_set *selectClient) {
+    FD_SET(clients[*CNC].clientSocket, selectClient);
+    CNC ++;
+}
 
+/**
+ * @brief calculates the maxfd
+ * 
+ * @param clients struct ClientData
+ * @param parentSocket int
+ * @param CNC int number of connected clients (how big is the clients array)
+ */
+int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
+    int maxfd = parentSocket;
+    for (int i = 0; i < CNC; i++) {
+        if (clients[i].clientSocket > maxfd) {
+            maxfd = clients[i].clientSocket;
+        }
+    }
+    return maxfd;
+}
+
+void readFromClient(struct ClientData *currentClient) {
+    char buffer[32];
+    ssize_t n = Read(currentClient->clientSocket, buffer, sizeof(buffer) - 1);
+    buffer[n] = '\0';
+    fprintf(stdout, "from %s: %s\n", currentClient->username, buffer);
 }

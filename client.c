@@ -34,19 +34,14 @@ int main(int argc, char const* argv[]) {
     Send(socket, &package, 128, 0);
     printf("Package Sent\n");
 
-    int test = 1;
-    while (test == 1) {
-        char buffer[32];
-        ssize_t n = Read(socket, buffer, sizeof(buffer) - 1);
-        if (n > 0) {
-            buffer[n] = '\0';  // Null-terminate the received data
-            fprintf(stdout, "from server: %s\n", buffer);
-        } else if (n == 0) {
-            fprintf(stdout, "Server closed the connection.\n");
-            break;
-        } else {
-            perror("Read error");
-            break;
+    pid_t forkReturn = Fork();
+    while (1) {
+        if (forkReturn != 0) {
+            int fromServerReturn = readFromServer(socket);
+            if (fromServerReturn == 1) break;
+            
+        } else if (forkReturn == 0) {
+            sendToServer(socket);
         }
     }
 

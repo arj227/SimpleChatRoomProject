@@ -16,4 +16,7 @@ void assemblyPackage(__uint128_t *package, char* username, char* password, uint8
 
 int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAdress);
 
+int readFromServer(int socket);
+void sendToServer(int socket);
+
 #endif

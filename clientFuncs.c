@@ -69,6 +69,7 @@ void parseArgs(int argc, char const *argv[], char *ipArray) {
 /**
  * @brief Prompts the user to enter a username and password, with error checking.
  * 
+ * @details
  * This function reads the username and password from the terminal and performs
  * basic error checking to ensure input was successful. It limits the input to
  * prevent buffer overflow.
@@ -208,4 +209,29 @@ int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAddress) 
     // fprintf(stdout, "Connected to Server!\n");
 
     return clientSocket;
+}
+
+
+int readFromServer(int socket) {
+    char buffer[32];
+    ssize_t n = Read(socket, buffer, sizeof(buffer) - 1);
+    if (n > 0) {
+        buffer[n] = '\0';  // Null-terminate the received data
+        fprintf(stdout, "\nfrom server: %s\n--> ", buffer);
+        return 0;
+    } else if (n == 0) {
+        fprintf(stdout, "\nServer closed the connection.\n");
+        return 1;
+    } else {
+        perror("Read error");
+        return 1;
+    }
+}
+
+void sendToServer(int socket) {
+    char buffer[32];
+    fprintf(stdout, "--> ");
+    scanf("%31s", buffer);
+
+    Send(socket, &buffer, sizeof(buffer), 0);
 }
