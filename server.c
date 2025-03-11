@@ -40,6 +40,8 @@ int main(int argc, char const* argv[])
     int chatRoomsSockets[255];
 
     while (1) {
+
+        // !! BIG TODO: Change this to a select so we can listen for the rooms closing!
         clientSocket  = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
         fprintf(stdout, "\n\n----------------------------------\nClient Found!\n");
 

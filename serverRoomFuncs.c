@@ -117,10 +117,12 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
 }
 
 void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
+    int chatRoom = clients[0].chatRoom;
     char buffer[32];
     ssize_t n = Read(clients[whatClient].clientSocket, buffer, sizeof(buffer) - 1);
 
     if (n <= 0 || strcmp(buffer, "$exit")) {
+        fprintf(stdout, "%d: user (%s) is exiting\n", clients[whatClient].chatRoom, clients[whatClient].username);
         if (strcmp(buffer, "$exit")) {
             Send(clients[whatClient].clientSocket, buffer, sizeof(buffer), 0);
         }
@@ -128,6 +130,7 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
 
         if (whatClient == (*CNC - 1)) {
             memset(&clients[whatClient], 0, sizeof(struct ClientData));
+            (*CNC) --;
         } else {
             // Shift all clients to the left, overwriting the closed client slot
             for (int i = whatClient; i < *CNC - 1; i++) {
@@ -137,6 +140,13 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
             memset(&clients[*CNC - 1], 0, sizeof(struct ClientData));
             // Decrement the number of connected clients
             (*CNC) --;
+        }
+
+        fprintf(stdout, "DEBUG: CNC = %d\n", *CNC);
+
+        if (*CNC == 0) {
+            fprintf(stdout, "%d: closing room, no more users\n", chatRoom);
+            exit(0);
         }
     }
 
