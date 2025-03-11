@@ -44,34 +44,29 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
     int maxfd = (socketWithParent > clients[0].clientSocket ? socketWithParent : clients[0].clientSocket) + 1;
 
     while(1) {
+        /*int selectReturnVal = */Select(maxfd, &selectClient, NULL, NULL, NULL);
 
-        int selectReturnVal = select(maxfd, &selectClient, NULL, NULL, NULL);
-
-        if (selectReturnVal == -1) {
-            fprintf(stderr, "select Failure: %d\n", EXIT_FAILURE);
-            exit(EXIT_FAILURE);
-        } else if (selectReturnVal == 0) {
-            // shouldn't happen
-            fprintf(stderr, "timeout\b");
-            continue;
-        }
-
+        //checks for new messages from parent server (new clients)
         if (FD_ISSET(socketWithParent, &selectClient)) {
             fprintf(stdout, "%d: recieved new user\n", chatRoomNumber);
-            addNewClient(&CNC, clients, &selectClient, socketWithParent);
-            maxfd = calculateMaxfd(clients, socketWithParent, CNC);
+            Read(socketWithParent, &clients[CNC], sizeof(struct ClientData));
+            fprintf(stdout, "%d: new user: %s\n", clients[CNC].chatRoom, clients[CNC].username);
+            CNC ++;
             fprintf(stdout, "----------------------------------\n\n");
         }
 
+        //checks for messages from the clients
         for (int i = 0; i < CNC; i ++) {
             if (FD_ISSET(clients[i].clientSocket, &selectClient)) {
                 fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
                 readFromClient(&clients[i]);
+                // resetFD_SET(&CNC, clients, &selectClient, socketWithParent);
+                // maxfd = calculateMaxfd(clients, socketWithParent, CNC);
             }
         }
-
-
-        sleep(1);
+        // sleep(1);
+        resetFD_SET(&CNC, clients, &selectClient, socketWithParent);
+        maxfd = calculateMaxfd(clients, socketWithParent, CNC) + 1;
     }
 }
 
@@ -92,12 +87,15 @@ int joinRoom(int chatRoomSocket, struct ClientData *client) {
 /**
  * @brief adds new client to the fd_set structure for the select()
  */
-void addNewClient(int *CNC, struct ClientData *clients, fd_set *selectClient, int socketWithParent) {
-    Read(socketWithParent, &clients[*CNC], sizeof(struct ClientData));
-    fprintf(stdout, "%d: new user: %s\n", clients[*CNC].chatRoom, clients[*CNC].username);
+void resetFD_SET(int *CNC, struct ClientData *clients, fd_set *selectClient, int socketWithParent) {
+    FD_ZERO(selectClient);
 
-    FD_SET(clients[*CNC].clientSocket, selectClient);
-    CNC ++;
+    FD_SET(socketWithParent, selectClient);
+    for (int i = 0; i < *CNC; i ++) {
+        FD_SET(clients[i].clientSocket, selectClient);
+    }
+
+    
 }
 
 /**

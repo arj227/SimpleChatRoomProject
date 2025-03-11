@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 #include <sys/socket.h>
 
 void *Malloc(size_t size);
@@ -32,5 +32,6 @@ void Listen(int sockfd, int backlog);
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int Socketpair(int domain, int type, int protocol, int sv[2]);
+int Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 
 #endif

@@ -4,12 +4,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <time.h>
 
 void *Malloc(size_t size) {
     void *ptr;
@@ -213,6 +214,15 @@ int Socketpair(int domain, int type, int protocol, int sv[2]) {
     if ((n = socketpair(domain, type, protocol, sv)) != 0) {
         fprintf(stderr, "socketpair error: %d", errno);
         exit(errno);
+    }
+    return n;
+}
+
+int Select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
+    int n;
+    if ((n = select(nfds, readfds, writefds, exceptfds, timeout)) < 0) {
+        perror("select error");
+        exit(EXIT_FAILURE);
     }
     return n;
 }
