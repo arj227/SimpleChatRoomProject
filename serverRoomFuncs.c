@@ -25,19 +25,24 @@
  * @param firstClient int socket for the client that asked to open the room
  * @param chatRoomNumber int what room number this is, used mostly for terminal prints
  */
-void activeChatRoom(int firstClient, int chatRoomNumber, int socketWithParent) {
-    int clients[32];
-    clients[0] = firstClient;
+void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int socketWithParent) {
+    struct ClientData clients[10];
+    // STANDS FOR CurrentNumberClients
+    int CNC = 1;
+    for (int i = 0; i < 10; i++) {
+        clients[i].username[0] = '\0';
+        clients[i].userPassword[0] = '\0';
+        clients[i].chatRoom = 0;
+    }
+    clients[0] = *firstClient;
 
     while(1) {
         // char buffer[32] = "hello from child";
         // fprintf(stdout, "Room %d: Sending Message\n", chatRoomNumber);
         // Send(socketWithParent, buffer, sizeof(buffer), 0);
+        Read(socketWithParent, &clients[CNC], sizeof(struct ClientData));
 
-        struct ClientData *newClient = Malloc(sizeof(struct ClientData));
-        Read(socketWithParent, newClient, sizeof(struct ClientData));
-
-        fprintf(stdout, "%d: new Client username: %s\n", chatRoomNumber, newClient->username);
+        fprintf(stdout, "%d: new Client username: %s\n", chatRoomNumber, clients[CNC].username);
 
         sleep(3);
     }

@@ -73,14 +73,13 @@ int main(int argc, char const* argv[])
 
             chatRooms[client.chatRoom] = Fork();
 
-            // CHILD CODE THATS RUNS CHATROOM
+            // CREATING A CHILD AND A NEW CHAT ROOM
             if (chatRooms[client.chatRoom] == 0) {
                 fprintf(stdout, "activating new room: %d\n", client.chatRoom);
                 fprintf(stdout, "----------------------------------\n\n");
-                fflush(stdout);
 
                 Close(socketPairHolder[0]);
-                activeChatRoom(clientSocket, client.chatRoom, socketPairHolder[1]);
+                activeChatRoom(&client, client.chatRoom, socketPairHolder[1]);
                 // !!TODO reap this child :)
 
             // PARENT CODE AFTER CHATROOM IS CREATED

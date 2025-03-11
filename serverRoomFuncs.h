@@ -3,7 +3,7 @@
 
 #include "serverFuncs.h"
 
-void activeChatRoom(int firstClient, int chatRoomNumber, int socketWithParent);
+void activeChatRoom(struct ClientData *client, int chatRoomNumber, int socketWithParent);
 int joinRoom(int chatRoomSocket, struct ClientData *client);
 
 
