@@ -4,6 +4,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+struct ClientData {
+    char username[32];
+    char userPassword[32];
+    u_int8_t chatRoom;
+    int clientSocket;
+};
+
+
 void StringToLower(char *str);
 void parseArgs(int argc, char const *argv[], char *hexArray);
 

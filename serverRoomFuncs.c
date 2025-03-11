@@ -30,82 +30,28 @@ void activeChatRoom(int firstClient, int chatRoomNumber, int socketWithParent) {
     clients[0] = firstClient;
 
     while(1) {
-        char buffer[32] = "hello from child";
+        // char buffer[32] = "hello from child";
+        // fprintf(stdout, "Room %d: Sending Message\n", chatRoomNumber);
+        // Send(socketWithParent, buffer, sizeof(buffer), 0);
 
-        fprintf(stdout, "Room %d: Sending Message\n", chatRoomNumber);
-        Send(socketWithParent, buffer, sizeof(buffer), 0);
+        struct ClientData *newClient = Malloc(sizeof(struct ClientData));
+        Read(socketWithParent, newClient, sizeof(struct ClientData));
+
+        fprintf(stdout, "%d: new Client username: %s\n", chatRoomNumber, newClient->username);
+
         sleep(3);
     }
 }
 
-// int joinRoom(int chatRoomSocket, int clientToSend) {
-//     struct msghdr message;
-//     memset(&message, 0, sizeof(message));
-
-//     // Dummy data required for sendmsg().
-//     char buffer[1] = {0};
-//     struct iovec iov;
-//     iov.iov_base = buffer;
-//     iov.iov_len = sizeof(buffer);
-//     message.msg_iov = &iov;
-//     message.msg_iovlen = 1;
-
-//     // Allocate buffer for the ancillary data.
-//     char ancillaryBuffer[CMSG_SPACE(sizeof(clientToSend))];
-//     memset(ancillaryBuffer, 0, sizeof(ancillaryBuffer));
-//     message.msg_control = ancillaryBuffer;
-//     message.msg_controllen = sizeof(ancillaryBuffer);
-
-//     // Set up the ancillary data header.
-//     struct cmsghdr *cmsg = CMSG_FIRSTHDR(&message);
-//     cmsg->cmsg_level = SOL_SOCKET;
-//     cmsg->cmsg_type = SCM_RIGHTS;
-//     cmsg->cmsg_len = CMSG_LEN(sizeof(clientToSend));
-//     memcpy(CMSG_DATA(cmsg), &clientToSend, sizeof(clientToSend));
-
-//     // Send the message.
-//     if (sendmsg(chatRoomSocket, &message, 0) < 0) {
-//         perror("sendmsg");
-//         return -1;
-//     }
-//     return 0;
-// }
-
-
-// int recieveNewClient(int parentSocket) {
-//     struct msghdr message;
-//     memset(&message, 0, sizeof(message));
-
-//     char buffer[1];
-//     struct iovec iov;
-//     iov.iov_base = buffer;
-//     iov.iov_len = sizeof(buffer);
-//     message.msg_iov = &iov;
-//     message.msg_iovlen = 1;
-
-//     // Buffer for the ancillary data.
-//     char ancillaryBuffer[CMSG_SPACE(sizeof(int))];
-//     memset(ancillaryBuffer, 0, sizeof(ancillaryBuffer));
-//     message.msg_control = ancillaryBuffer;
-//     message.msg_controllen = sizeof(ancillaryBuffer);
-
-//     if (recvmsg(socket, &message, 0) < 0) {
-//         perror("recvmsg");
-//         return -1;
-//     }
-
-//     // Retrieve the file descriptor from the ancillary data.
-//     struct cmsghdr *cmsg = CMSG_FIRSTHDR(&message);
-//     if (cmsg == NULL) {
-//         fprintf(stderr, "No ancillary data received\n");
-//         return -1;
-//     }
-//     if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS) {
-//         fprintf(stderr, "Invalid ancillary data received\n");
-//         return -1;
-//     }
-
-//     int fd_received;
-//     memcpy(&fd_received, CMSG_DATA(cmsg), sizeof(fd_received));
-//     return fd_received;
-// }
+/**
+ * @brief sends the new client to an open room
+ * 
+ * @param chatRoomSocket int the chatroom that is open
+ * @param clientToSend int* the new client that wants to join
+ */
+int joinRoom(int chatRoomSocket, struct ClientData *client) {
+    
+    fprintf(stdout, "sending new client\n");
+    Send(chatRoomSocket, client, sizeof(struct ClientData), 0);
+    return 0;
+}

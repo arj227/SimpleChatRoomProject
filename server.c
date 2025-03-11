@@ -4,7 +4,7 @@
  * 
  * @author Austin James
  * @date Created: 11/4/24
- * @date Last Modified: 11/5/24
+ * @date Last Modified: 3/10/25
  * 
  * @copyright
  * Copyright (c) 2024 Austin James
@@ -48,49 +48,53 @@ int main(int argc, char const* argv[])
         memcpy(&package, buffer, sizeof(package));
 
         fprintf(stdout, "unpacking user data\n");
-        char username[32];
-        char userPassword[32];
-        u_int8_t chatRoom = 0;
-        unpackage(&package, username, userPassword, &chatRoom);
 
-        if (strcmp(password, userPassword) != 0) {
+        // pre struct variables
+        // char username[32];
+        // char userPassword[32];
+        // u_int8_t chatRoom = 0;
+
+        struct ClientData client;
+        client.clientSocket = clientSocket;
+        unpackage(&package, client.username, client.userPassword, &client.chatRoom);
+
+        if (strcmp(password, client.userPassword) != 0) {
             fprintf(stdout, "User gave wrong password\n");
             continue;
             // TODO probably should tell the user this
         }
         fprintf(stdout, "Correct Password from client!\n");
 
-        if (chatRooms[chatRoom] == 0) {
+        if (chatRooms[client.chatRoom] == 0) {
             fprintf(stdout, "running fork!\n");
 
             int socketPairHolder[2];
             Socketpair(AF_UNIX, SOCK_DGRAM, 0, socketPairHolder);
 
-            chatRooms[chatRoom] = Fork();
+            chatRooms[client.chatRoom] = Fork();
 
             // CHILD CODE THATS RUNS CHATROOM
-            if (chatRooms[chatRoom] == 0) {
-                fprintf(stdout, "activating new room: %d\n", chatRoom);
+            if (chatRooms[client.chatRoom] == 0) {
+                fprintf(stdout, "activating new room: %d\n", client.chatRoom);
                 fprintf(stdout, "----------------------------------\n\n");
                 fflush(stdout);
 
                 Close(socketPairHolder[0]);
-                activeChatRoom(clientSocket, chatRoom, socketPairHolder[1]);
+                activeChatRoom(clientSocket, client.chatRoom, socketPairHolder[1]);
                 // !!TODO reap this child :)
 
             // PARENT CODE AFTER CHATROOM IS CREATED
-            } else if (chatRooms[chatRoom] != 0) {
+            } else if (chatRooms[client.chatRoom] != 0) {
                 fprintf(stdout, "this is the parent\n");
                 Close(socketPairHolder[1]);
-                chatRoomsSockets[chatRoom] = socketPairHolder[0];
+                chatRoomsSockets[client.chatRoom] = socketPairHolder[0];
 
             // SHOULD NEVER RUN
             } else {
                 fprintf(stdout, "\n\n\nBig Fail\n\n\n");
             }
-        } else if (chatRooms[chatRoom] != 0) {
-            fprintf(stdout, "would run joinroom\n");
-            // joinRoom();
+        } else if (chatRooms[client.chatRoom] != 0) {
+            joinRoom(chatRoomsSockets[client.chatRoom], &client);
         }
     }
     // closing the connected socket
