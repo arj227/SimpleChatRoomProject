@@ -214,16 +214,22 @@ int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAddress) 
 
 
 int readFromServer(int socket) {
-    char buffer[32];
-    ssize_t n = Read(socket, buffer, sizeof(buffer) - 1);
-    if (n > 0) {
-        buffer[n] = '\0';  // Null-terminate the received data
+    uint16_t messageLength;
+    ssize_t n = Read(socket, &messageLength, sizeof(messageLength));
+    char *message = malloc(messageLength);
+    if (message == NULL) {
+        perror("malloc");
+        exit(1);
+    }
+    Read(socket, message, messageLength);
 
-        if (buffer[0] == '$') {
+    if (n > 0) {
+        if (message[0] == '$') {
             exit(0);
         }
 
-        fprintf(stdout, "\nfrom server: %s\n--> ", buffer);
+        fprintf(stdout, "\n%s\n--> ", message);
+        fflush(stdout);
         return 0;
     } else if (n == 0) {
         fprintf(stdout, "\nServer closed the connection.\n");
@@ -236,17 +242,19 @@ int readFromServer(int socket) {
 
 void sendToServer(int socket) {
     struct MessagePacket messagePacket;
+    if (fgets(messagePacket.message, sizeof(messagePacket.message), stdin) != NULL) {
+        // Remove the trailing newline, if present.
+        messagePacket.message[strcspn(messagePacket.message, "\n")] = '\0';
+    }
 
-    fprintf(stdout, "--> ");
-    scanf("%63s", messagePacket.message);
-    messagePacket.message[sizeof(messagePacket.message) - 1] = '\0';
     messagePacket.messageLength = strlen(messagePacket.message) + 1;
-
     Send(socket, &messagePacket, sizeof(messagePacket.messageLength) + messagePacket.messageLength, 0);
 
     if (messagePacket.message[0] == '$') {
         userCommand(messagePacket.message);
     }
+    fprintf(stdout, "--> ");
+    fflush(stdout);
 }
 
 void userCommand(char *buffer) {

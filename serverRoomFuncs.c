@@ -154,7 +154,7 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
  * @note This function modifies the clients array and the CNC variable if a client disconnects.
  * @note The function exits the process if there are no more clients in the chat room.
  */
-void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *message) {
+void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *messageToReturn) {
     int chatRoom = clients[0].chatRoom;
     uint16_t messageLength;
     ssize_t n = Read(clients[whatClient].clientSocket, &messageLength, sizeof(messageLength));
@@ -194,16 +194,20 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *
         }
     }
     fprintf(stdout, "%d: from %s: %s\n",clients[whatClient].chatRoom, clients[whatClient].username, message);
+    strcpy(messageToReturn, message);
 }
 
-sendToClientsstruct(struct ClientData *clients, int whatClient, int CNC, char *message) {
+void sendToClients(struct ClientData *clients, int whatClient, int CNC, char *message) {
     char finalString[96];
-    strcpy(finalString, clients[whatClient].username);
-    strcat(finalString, ": ");
-    strcat(finalString, message);
+    snprintf(finalString, sizeof(finalString), "%s: %s", clients[whatClient].username, message);
+
+    struct MessagePacket messagePacket;
+    snprintf(messagePacket.message, sizeof(messagePacket.message), "%s", finalString);
+    messagePacket.messageLength = strlen(messagePacket.message) + 1;
 
     for (int i = 0; i < CNC; i ++) {
-        Send(clients[i].clientSocket, finalString, sizeof(finalString), 0);
+        if (i == whatClient) continue;
+        Send(clients[i].clientSocket, &messagePacket, sizeof(messagePacket.messageLength) + messagePacket.messageLength, 0);
     }
 }
 
