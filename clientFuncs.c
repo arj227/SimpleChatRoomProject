@@ -235,20 +235,22 @@ int readFromServer(int socket) {
 }
 
 void sendToServer(int socket) {
-    char buffer[32];
+    struct MessagePacket messagePacket;
+
     fprintf(stdout, "--> ");
-    scanf("%31s", buffer);
+    scanf("%63s", messagePacket.message);
+    messagePacket.message[sizeof(messagePacket.message) - 1] = '\0';
+    messagePacket.messageLength = strlen(messagePacket.message) + 1;
 
-    if (buffer[0] == '$') {
-        userCommand(buffer, socket);
+    Send(socket, &messagePacket, sizeof(messagePacket.messageLength) + messagePacket.messageLength, 0);
+
+    if (messagePacket.message[0] == '$') {
+        userCommand(messagePacket.message);
     }
-
-    Send(socket, &buffer, sizeof(buffer), 0);
 }
 
-void userCommand(char *buffer, int socket) {
+void userCommand(char *buffer) {
     if (strcmp(buffer, "$exit") == 0) {
-        Send(socket, buffer, sizeof(buffer), 0);
         exit(0);
     }
 }

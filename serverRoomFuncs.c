@@ -46,6 +46,7 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
     int maxfd = (socketWithParent > clients[0].clientSocket ? socketWithParent : clients[0].clientSocket) + 1;
 
     while(1) {
+        fprintf(stdout, "\n");
         resetFD_SET(CNC, clients, &selectClient, socketWithParent);
         maxfd = calculateMaxfd(clients, socketWithParent, CNC);
         /*int selectReturnVal = */Select(maxfd, &selectClient, NULL, NULL, NULL);
@@ -57,10 +58,10 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
             clients[CNC].clientSocket = recv_fd(socketWithParent);
 
 
-            fprintf(stdout, "DEBUG: %d: newClient: %s -- %s -- %d\n", clients[CNC].chatRoom, clients[CNC].username, 
-                clients[CNC].userPassword, clients[CNC].clientSocket);
-            fprintf(stdout, "DEBUG: %d: firstClient: %s -- %s -- %d\n", firstClient->chatRoom, firstClient->username, 
-                firstClient->userPassword, firstClient->clientSocket);
+            // fprintf(stdout, "DEBUG: %d: newClient: %s -- %s -- %d\n", clients[CNC].chatRoom, clients[CNC].username, 
+            //     clients[CNC].userPassword, clients[CNC].clientSocket);
+            // fprintf(stdout, "DEBUG: %d: firstClient: %s -- %s -- %d\n", firstClient->chatRoom, firstClient->username, 
+            //     firstClient->userPassword, firstClient->clientSocket);
 
             CNC ++;
             fprintf(stdout, "----------------------------------\n\n");
@@ -68,7 +69,7 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
         }
         //checks for messages from the clients
         for (int i = CNC - 1; i >= 0; i --) {
-            fprintf(stdout, "DEBUG:%d: checking for date from %s\n", clients[i].chatRoom, clients[i].username);
+            // fprintf(stdout, "DEBUG:%d: checking for data from %s\n", clients[i].chatRoom, clients[i].username);
             if (FD_ISSET(clients[i].clientSocket, &selectClient)) {
                 fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
                 readFromClient(clients, i, &CNC);
@@ -97,11 +98,11 @@ int joinRoom(int chatRoomSocket, struct ClientData *client) {
 void resetFD_SET(int CNC, struct ClientData *clients, fd_set *selectClient, int socketWithParent) {
     FD_ZERO(selectClient);
 
-    fprintf(stdout, "%d: adding parent to FD_SET\n", clients[0].chatRoom);
+    // fprintf(stdout, "DEBUG:%d: adding parent to FD_SET\n", clients[0].chatRoom);
     FD_SET(socketWithParent, selectClient);
     for (int i = 0; i < CNC; i ++) {
-        fprintf(stdout, "%d: adding client: %s to FD_SET with socklet: %d\n", 
-            clients[i].chatRoom, clients[i].username, clients[i].clientSocket);
+        // fprintf(stdout, "DEBUG:%d: adding client: %s to FD_SET with socklet: %d\n", 
+            // clients[i].chatRoom, clients[i].username, clients[i].clientSocket);
         FD_SET(clients[i].clientSocket, selectClient);
     }
 }
@@ -152,14 +153,20 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
  */
 void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
     int chatRoom = clients[0].chatRoom;
-    char buffer[32];
-    ssize_t n = Read(clients[whatClient].clientSocket, buffer, sizeof(buffer) - 1);
+    uint16_t messageLength;
+    ssize_t n = Read(clients[whatClient].clientSocket, &messageLength, sizeof(messageLength));
+    char *message = malloc(messageLength);
+    if (message == NULL) {
+        perror("malloc");
+        exit(1);
+    }
+    Read(clients[whatClient].clientSocket, message, messageLength);
 
 
-    if (n <= 0 || strcmp(buffer, "$exit") == 0) {
+    if (n <= 0 || strcmp(message, "$exit") == 0) {
         fprintf(stdout, "%d: user (%s) is exiting\n", clients[whatClient].chatRoom, clients[whatClient].username);
-        if (strcmp(buffer, "$exit") == 0) {
-            Send(clients[whatClient].clientSocket, buffer, sizeof(buffer), 0);
+        if (strcmp(message, "$exit") == 0) {
+            Send(clients[whatClient].clientSocket, message, sizeof(message), 0);
         }
         close(clients[whatClient].clientSocket);
 
@@ -183,8 +190,7 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
             exit(0);
         }
     }
-    buffer[n] = '\0';
-    fprintf(stdout, "%d: from %s: %s\n",clients[whatClient].chatRoom, clients[whatClient].username, buffer);
+    fprintf(stdout, "%d: from %s: %s\n",clients[whatClient].chatRoom, clients[whatClient].username, message);
 }
 
 /**
