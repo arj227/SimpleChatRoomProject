@@ -35,7 +35,6 @@ int main(int argc, char const* argv[]) {
     printf("Package Sent\n");
 
     pid_t forkReturn = Fork();
-    fprintf(stdout, "--> ");
     fflush(stdout);
     while (1) {
         if (forkReturn != 0) {

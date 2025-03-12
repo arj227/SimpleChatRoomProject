@@ -170,7 +170,6 @@ void assemblyPackage(__uint128_t *package, char* username, char* password, uint8
 
 }
 
-
 /**
  * @brief Creates a TCP socket and connects to a server at the specified port.
  * 
@@ -212,7 +211,6 @@ int connectServer(int port, struct sockaddr_in *serverAddress, char *ipAddress) 
     return clientSocket;
 }
 
-
 int readFromServer(int socket) {
     uint16_t messageLength;
     ssize_t n = Read(socket, &messageLength, sizeof(messageLength));
@@ -241,6 +239,9 @@ int readFromServer(int socket) {
 }
 
 void sendToServer(int socket) {
+    
+
+
     struct MessagePacket messagePacket;
     if (fgets(messagePacket.message, sizeof(messagePacket.message), stdin) != NULL) {
         // Remove the trailing newline, if present.
@@ -258,7 +259,18 @@ void sendToServer(int socket) {
 }
 
 void userCommand(char *buffer) {
+
     if (strcmp(buffer, "$exit") == 0) {
         exit(0);
     }
+}
+
+/**
+ * @brief resets the FD_SET for the select statement!
+ */
+void resetFD_SET(int socket, fd_set *selectFD) {
+    FD_ZERO(selectFD);
+
+    FD_SET(0, selectFD);
+    FD_SET(socket, selectFD);
 }
