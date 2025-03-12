@@ -47,18 +47,19 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
 
     while(1) {
         resetFD_SET(CNC, clients, &selectClient, socketWithParent);
-        maxfd = calculateMaxfd(clients, socketWithParent, CNC) + 1;
+        maxfd = calculateMaxfd(clients, socketWithParent, CNC);
         /*int selectReturnVal = */Select(maxfd, &selectClient, NULL, NULL, NULL);
 
         //checks for new messages from parent server (new clients)
         if (FD_ISSET(socketWithParent, &selectClient)) {
             fprintf(stdout, "%d: recieved new user\n", chatRoomNumber);
             Read(socketWithParent, &clients[CNC], sizeof(struct ClientData));
+            clients[CNC].clientSocket = recv_fd(socketWithParent);
 
 
-            fprintf(stdout, "%d: firstClient: %s -- %s -- %d", clients[CNC].chatRoom, clients[CNC].username, 
+            fprintf(stdout, "DEBUG: %d: newClient: %s -- %s -- %d\n", clients[CNC].chatRoom, clients[CNC].username, 
                 clients[CNC].userPassword, clients[CNC].clientSocket);
-            fprintf(stdout, "%d: firstClient: %s -- %s -- %d\n", firstClient->chatRoom, firstClient->username, 
+            fprintf(stdout, "DEBUG: %d: firstClient: %s -- %s -- %d\n", firstClient->chatRoom, firstClient->username, 
                 firstClient->userPassword, firstClient->clientSocket);
 
             CNC ++;
@@ -66,7 +67,8 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
             continue;
         }
         //checks for messages from the clients
-        for (int i = 0; i < CNC; i ++) {
+        for (int i = CNC - 1; i >= 0; i --) {
+            fprintf(stdout, "DEBUG:%d: checking for date from %s\n", clients[i].chatRoom, clients[i].username);
             if (FD_ISSET(clients[i].clientSocket, &selectClient)) {
                 fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
                 readFromClient(clients, i, &CNC);
@@ -83,12 +85,11 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
  * @param clientToSend int* the new client that wants to join
  */
 int joinRoom(int chatRoomSocket, struct ClientData *client) {
-    
     fprintf(stdout, "sending new client\n");
     Send(chatRoomSocket, client, sizeof(struct ClientData), 0);
+    send_fd(chatRoomSocket, client->clientSocket);
     return 0;
 }
-
 
 /**
  * @brief adds new client to the fd_set structure for the select()
@@ -119,9 +120,8 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
             maxfd = clients[i].clientSocket;
         }
     }
-    return maxfd;
+    return maxfd + 1;
 }
-
 
 /**
  * @brief Reads data from a client socket and handles client disconnection.
@@ -154,7 +154,7 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
     int chatRoom = clients[0].chatRoom;
     char buffer[32];
     ssize_t n = Read(clients[whatClient].clientSocket, buffer, sizeof(buffer) - 1);
-    
+
 
     if (n <= 0 || strcmp(buffer, "$exit") == 0) {
         fprintf(stdout, "%d: user (%s) is exiting\n", clients[whatClient].chatRoom, clients[whatClient].username);
@@ -185,4 +185,89 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
     }
     buffer[n] = '\0';
     fprintf(stdout, "%d: from %s: %s\n",clients[whatClient].chatRoom, clients[whatClient].username, buffer);
+}
+
+/**
+ * @brief Sends a file descriptor over a Unix domain socket.
+ *
+ * This function uses the SCM_RIGHTS mechanism to send a file descriptor (fd_to_send)
+ * over a Unix domain socket specified by unix_socket. It attaches the file descriptor
+ * as ancillary data using sendmsg(). A small payload (e.g. "FD") is sent along with the
+ * file descriptor, though the payload content is not critical.
+ *
+ * @param unix_socket The Unix domain socket file descriptor used for sending the FD.
+ * @param fd_to_send The file descriptor to be sent.
+ * @return 0 on success, or -1 if an error occurs (an error message is printed via perror).
+ *
+ * @note Ensure that unix_socket is a valid, connected Unix domain socket.
+ * @note The file descriptor passed in (fd_to_send) will be duplicated by the OS when
+ *       received on the other side.
+ */
+int send_fd(int unix_socket, int fd_to_send) {
+    struct msghdr msg = {0};
+    char buf[CMSG_SPACE(sizeof(fd_to_send))];
+    memset(buf, '\0', sizeof(buf));
+
+    // You can send any data with the FD; here we send a simple dummy payload.
+    struct iovec io = { .iov_base = (void *)"FD", .iov_len = 2 };
+
+    msg.msg_iov = &io;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type  = SCM_RIGHTS;
+    cmsg->cmsg_len   = CMSG_LEN(sizeof(fd_to_send));
+
+    memcpy(CMSG_DATA(cmsg), &fd_to_send, sizeof(fd_to_send));
+
+    msg.msg_controllen = cmsg->cmsg_len;
+
+    if (sendmsg(unix_socket, &msg, 0) < 0) {
+        perror("sendmsg");
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Receives a file descriptor from a Unix domain socket.
+ *
+ * This function receives a file descriptor that was sent via SCM_RIGHTS over a Unix domain socket.
+ * It uses recvmsg() to retrieve both the payload and the ancillary data, from which it extracts the
+ * transferred file descriptor. The received file descriptor is stored in the integer pointed to by fd_received.
+ *
+ * @param unix_socket The Unix domain socket file descriptor to receive the FD from.
+ * @param fd_received Pointer to an integer where the received file descriptor will be stored.
+ * @return 0 on success, or -1 if an error occurs (an error message is printed via perror).
+ *
+ * @note Ensure that unix_socket is a valid, connected Unix domain socket.
+ */
+int recv_fd(int unix_socket) {
+    struct msghdr msg = {0};
+    char m_buffer[256];
+    struct iovec io = { .iov_base = m_buffer, .iov_len = sizeof(m_buffer) };
+    
+    char c_buffer[CMSG_SPACE(sizeof(int))];
+    msg.msg_control = c_buffer;
+    msg.msg_controllen = sizeof(c_buffer);
+    msg.msg_iov = &io;
+    msg.msg_iovlen = 1;
+
+    if (recvmsg(unix_socket, &msg, 0) < 0) {
+        perror("recvmsg");
+        return -1;
+    }
+
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    int fd_received = -1;
+    if (cmsg && cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
+        memcpy(&fd_received, CMSG_DATA(cmsg), sizeof(fd_received));
+    } else {
+        fprintf(stderr, "Did not receive file descriptor\n");
+        return -1;
+    }
+    return fd_received;
 }

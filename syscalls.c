@@ -199,15 +199,18 @@ void Listen(int sockfd, int backlog) {
 
 int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int connfd;
-
-    if ((connfd = accept(sockfd, addr, addrlen)) == -1) {
-        // Error handling: Print to standard error and exit with errno
-        fprintf(stderr, "Accept error: %s\n", strerror(errno));
-        exit(errno);
+    while ((connfd = accept(sockfd, addr, addrlen)) == -1) {
+        if (errno == EINTR) {
+            // Retry the accept() call if it was interrupted by a signal.
+            continue;
+        } else {
+            fprintf(stderr, "Accept error: %s\n", strerror(errno));
+            exit(errno);
+        }
     }
-
     return connfd;
 }
+
 
 int Socketpair(int domain, int type, int protocol, int sv[2]) {
     int n;
