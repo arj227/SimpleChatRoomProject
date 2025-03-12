@@ -72,7 +72,10 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
             // fprintf(stdout, "DEBUG:%d: checking for data from %s\n", clients[i].chatRoom, clients[i].username);
             if (FD_ISSET(clients[i].clientSocket, &selectClient)) {
                 fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
-                readFromClient(clients, i, &CNC);
+
+                char message[64];
+                readFromClient(clients, i, &CNC, message);
+                sendToClients(clients, i, CNC, message);
                 continue;
             }
         }
@@ -151,7 +154,7 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
  * @note This function modifies the clients array and the CNC variable if a client disconnects.
  * @note The function exits the process if there are no more clients in the chat room.
  */
-void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
+void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *message) {
     int chatRoom = clients[0].chatRoom;
     uint16_t messageLength;
     ssize_t n = Read(clients[whatClient].clientSocket, &messageLength, sizeof(messageLength));
@@ -191,6 +194,17 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC) {
         }
     }
     fprintf(stdout, "%d: from %s: %s\n",clients[whatClient].chatRoom, clients[whatClient].username, message);
+}
+
+sendToClientsstruct(struct ClientData *clients, int whatClient, int CNC, char *message) {
+    char finalString[96];
+    strcpy(finalString, clients[whatClient].username);
+    strcat(finalString, ": ");
+    strcat(finalString, message);
+
+    for (int i = 0; i < CNC; i ++) {
+        Send(clients[i].clientSocket, finalString, sizeof(finalString), 0);
+    }
 }
 
 /**
