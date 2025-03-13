@@ -26,4 +26,6 @@ int readFromServer(int socket);
 void sendToServer(int socket);
 void userCommand(char *buffer);
 
+void resetFD_SET(int socket, fd_set *selectFD);
+
 #endif

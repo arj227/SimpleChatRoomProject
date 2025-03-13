@@ -33,17 +33,18 @@ int main(int argc, char const* argv[]) {
     printf("Connected to the server...Sending package\n");
     Send(socket, &package, 128, 0);
     printf("Package Sent\n");
-
-    pid_t forkReturn = Fork();
-    fflush(stdout);
+    
+    fd_set selectFD;
+    int maxfd = 0;
     while (1) {
-        if (forkReturn != 0) {
+        resetFD_SET(socket, &selectFD);
+        maxfd = socket + 1; // this is done like this since the other option is always 0
+        Select(maxfd, &selectFD, NULL, NULL, NULL);
+
+        if (FD_ISSET(socket, &selectFD)) {
             int fromServerReturn = readFromServer(socket);
             if (fromServerReturn == 1) break;
-
-        } else if (forkReturn == 0) {
-            sendToServer(socket);
-        }
+        } else if(FD_ISSET(0, &selectFD)) sendToServer(socket);
     }
     Close(socket);
     return 0;
