@@ -17,6 +17,7 @@ void parseArgs(int argc, char const *argv[], char *hexArray);
 
 void createSocket(int *serverSocket, int *socketOption, struct sockaddr_in *address);
 void printLocalIP();
+void printExternalIP();
 
 void unpackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom);
 

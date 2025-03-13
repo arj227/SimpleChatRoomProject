@@ -11,8 +11,11 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <ifaddrs.h>
+#include <sys/types.h>
+#include <net/if.h>
 
-// Optional: Include ctype.h if StringToLower is used
+
 #include <ctype.h>         // Needed for tolower (if StringToLower is used)
 #define PORT 8080
 
@@ -168,6 +171,50 @@ void printLocalIP() {
     // Convert the IP to a string and print it
     IP = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0]));
     printf("Local IP address: %s\n", IP);
+}
+
+/**
+ * @brief Prints non-loopback IPv4 addresses available on the host.
+ *
+ * This function retrieves all network interfaces using getifaddrs() and then iterates
+ * through the list to find interfaces with an IPv4 address that are not flagged as loopback.
+ * It then prints the interface name and its corresponding IP address.
+ *
+ * @note If getifaddrs() fails, the function prints an error message and exits.
+ */
+void printExternalIP() {
+    struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    // Retrieve the linked list of network interfaces.
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Available non-loopback IPv4 addresses:\n");
+
+    // Loop through all interfaces.
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        // Check if the interface address is IPv4.
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            // Skip loopback interfaces.
+            if (ifa->ifa_flags & IFF_LOOPBACK)
+                continue;
+            
+            // Convert the interface address to a numeric string.
+            int s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+            if (s != 0) {
+                fprintf(stderr, "getnameinfo() failed: %s\n", gai_strerror(s));
+                exit(EXIT_FAILURE);
+            }
+            printf("%s: %s\n", ifa->ifa_name, host);
+        }
+    }
+    freeifaddrs(ifaddr);
 }
 
 /**

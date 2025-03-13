@@ -4,7 +4,7 @@
  * 
  * @author Austin James
  * @date Created: 11/4/24
- * @date Last Modified: 3/10/25
+ * @date Last Modified: 3/12/25
  * 
  * @copyright
  * Copyright (c) 2024 Austin James
@@ -25,7 +25,7 @@
 
 int main(int argc, char const* argv[])
 {
-    int serverSocket, clientSocket;
+    int serverSocket;
     struct sockaddr_in address;
     int socketOption = 1;
     socklen_t addrlen = sizeof(address);
@@ -35,6 +35,7 @@ int main(int argc, char const* argv[])
     parseArgs(argc, argv, password);
     createSocket(&serverSocket, &socketOption, (struct sockaddr_in*) &address);
     printLocalIP();
+    printExternalIP();
 
     pid_t chatRooms[16];
     int chatRoomsSockets[16];
@@ -85,12 +86,7 @@ int main(int argc, char const* argv[])
                 }
             }
         }
-        
-        
-        
     }
-    // closing the connected socket
-    Close(clientSocket);
     // closing the listening socket
     Close(serverSocket);
     return 0;
