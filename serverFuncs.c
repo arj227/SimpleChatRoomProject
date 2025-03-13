@@ -227,4 +227,31 @@ void unpackage(__uint128_t *package, char* username, char* password, uint8_t *ch
     fprintf(stdout, "Username: %s\nPassword: %s\nChat Room: %hhu\n", username, password, *chatRoom);
 }
 
+/**
+ * @brief creates a new chat room
+ * 
+ * @return returns the socket to communicate with the chatRoom
+ */
+int createRoom(pid_t *chatRooms, struct ClientData *client) {
+    fprintf(stdout, "running fork!\n");
 
+    int socketPairHolder[2];
+    Socketpair(AF_UNIX, SOCK_DGRAM, 0, socketPairHolder);
+
+    chatRooms[client->chatRoom] = Fork();
+
+    // CREATING A CHILD AND A NEW CHAT ROOM
+    if (chatRooms[client->chatRoom] == 0) {
+        fprintf(stdout, "activating new room: %d\n", client->chatRoom);
+        fprintf(stdout, "----------------------------------\n\n");
+
+        Close(socketPairHolder[0]);
+        activeChatRoom(client, client->chatRoom, socketPairHolder[1]);
+        // !!TODO reap this child :)
+
+    // PARENT CODE AFTER CHATROOM IS CREATED
+    } else if (chatRooms[client->chatRoom] != 0) {
+        Close(socketPairHolder[1]);
+        return socketPairHolder[0];
+    }
+}

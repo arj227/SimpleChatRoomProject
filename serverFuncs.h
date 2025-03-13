@@ -20,5 +20,7 @@ void printLocalIP();
 
 void unpackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom);
 
+int createRoom(pid_t *chatRooms, struct ClientData *client);
+
 
 #endif
