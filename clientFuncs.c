@@ -116,6 +116,11 @@ int userLogIn(char* username, char* password, uint8_t *chatRoom) {
     }
     *chatRoom = (u_int8_t) placeHolder;
 
+    int ch;
+    while ((ch = getchar()) != '\n' && ch != EOF) {
+        ; // Discard leftover characters.
+    }
+
     return 0;
 }
 
@@ -239,9 +244,6 @@ int readFromServer(int socket) {
 }
 
 void sendToServer(int socket) {
-    
-
-
     struct MessagePacket messagePacket;
     if (fgets(messagePacket.message, sizeof(messagePacket.message), stdin) != NULL) {
         // Remove the trailing newline, if present.

@@ -32,7 +32,8 @@ int main(int argc, char const* argv[]) {
 
     printf("Connected to the server...Sending package\n");
     Send(socket, &package, 128, 0);
-    printf("Package Sent\n");
+    printf("Package Sent\n--> ");
+    fflush(stdout);
     
     fd_set selectFD;
     int maxfd = 0;

@@ -1,4 +1,5 @@
 #include "serverFuncs.h"
+#include "serverRoomFuncs.h"
 #include "syscalls.h"
 
 #include <netinet/in.h>   // Needed for sockaddr_in structure
@@ -142,17 +143,9 @@ void createSocket(int *serverSocket, int *socketOption, struct sockaddr_in *addr
  * @note This function is designed for IPv4 addresses. If the machine has multiple network
  *       interfaces, this function will print the IP address of the first interface.
  * 
- * @error The function exits with a status of `1` if:
+ * @throw The function exits with a status of `1` if:
  * - The hostname cannot be obtained (error in `gethostname`).
  * - Host information cannot be retrieved (error in `gethostbyname`).
- * 
- * @example
- * ```c
- * int main() {
- *     printLocalIP();
- *     return 0;
- * }
- * ```
  */
 void printLocalIP() {
     char hostname[256];
@@ -228,9 +221,23 @@ void unpackage(__uint128_t *package, char* username, char* password, uint8_t *ch
 }
 
 /**
- * @brief creates a new chat room
- * 
- * @return returns the socket to communicate with the chatRoom
+ * @brief Creates a new chat room and returns the communication socket.
+ *
+ * This function establishes a new chat room by creating a Unix domain socket pair and then
+ * forking the process. The child process becomes the new chat room by calling activeChatRoom(),
+ * while the parent process closes the child's end of the socket pair and returns its own end, which
+ * is used for communicating with the chat room.
+ *
+ * The forked child process does not return from this function because it enters the chat room's main loop.
+ *
+ * @param chatRooms An array of pid_t used to store the process IDs of chat room processes. The index
+ *                  corresponding to the client's chat room number is updated with the child's PID.
+ * @param client A pointer to a ClientData structure that contains the client's information, including
+ *               the chat room number.
+ *
+ * @return int On the parent process, returns the socket file descriptor that will be used for
+ *             communicating with the newly created chat room. In the child process, the function does
+ *             not return.
  */
 int createRoom(pid_t *chatRooms, struct ClientData *client) {
     fprintf(stdout, "running fork!\n");
@@ -247,11 +254,57 @@ int createRoom(pid_t *chatRooms, struct ClientData *client) {
 
         Close(socketPairHolder[0]);
         activeChatRoom(client, client->chatRoom, socketPairHolder[1]);
-        // !!TODO reap this child :)
-
+        exit(0);
     // PARENT CODE AFTER CHATROOM IS CREATED
     } else if (chatRooms[client->chatRoom] != 0) {
         Close(socketPairHolder[1]);
         return socketPairHolder[0];
     }
+    __builtin_unreachable();
+}
+
+/**
+ * @brief Resets the file descriptor set for the parent process.
+ *
+ * This function clears the provided file descriptor set and then adds the server socket along with
+ * all active chat room sockets (stored in the chatRoomSockets array) to the set. A chat room socket
+ * is considered active if its value is not -1.
+ *
+ * @param chatRoomSockets An array of 16 integers representing chat room socket file descriptors.
+ *                        A value of -1 indicates that the slot is unused.
+ * @param serverSocket The file descriptor for the server (listening) socket.
+ * @param selectFDParent A pointer to the fd_set structure that will be reset and populated.
+ */
+void resetFD_SETParentSide(int *chatRoomSockets, int serverSocket, fd_set *selectFDParent) {
+    FD_ZERO(selectFDParent);
+
+    FD_SET(serverSocket, selectFDParent);
+    for (int i = 0; i < 16; i ++) {
+        if (chatRoomSockets[i] != -1) {
+            FD_SET(chatRoomSockets[i], selectFDParent);
+        }
+    }
+}
+
+/**
+ * @brief Calculates the maximum file descriptor value plus one for select() on the parent side.
+ *
+ * This function iterates through the server socket and an array of chat room socket file descriptors,
+ * and returns the value of the highest valid file descriptor plus one. This value is used as the first
+ * argument to the select() function.
+ *
+ * @param chatRoomSockets An array of 16 integers representing chat room socket file descriptors.
+ *                        A value of -1 indicates an inactive or unused socket.
+ * @param serverSocket The file descriptor for the server (listening) socket.
+ * @return int The maximum file descriptor value found among the server socket and chat room sockets,
+ *         plus one.
+ */
+int calculateMaxfdParentSide(int *chatRoomSockets, int serverSocket) {
+    int maxfd = serverSocket;
+    for (int i = 0; i < 16; i++) {
+        if (chatRoomSockets[i] > maxfd && chatRoomSockets[i] != -1) {
+            maxfd = chatRoomSockets[i];
+        }
+    }
+    return maxfd + 1;
 }

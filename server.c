@@ -36,34 +36,58 @@ int main(int argc, char const* argv[])
     createSocket(&serverSocket, &socketOption, (struct sockaddr_in*) &address);
     printLocalIP();
 
-    pid_t chatRooms[255];
-    int chatRoomsSockets[255];
+    pid_t chatRooms[16];
+    int chatRoomsSockets[16];
+    for (int i = 0; i < 16; i ++) chatRoomsSockets[i] = -1;
     fd_set serverSelectfd;
+    int maxFD;
 
-    while (1) {
-        struct ClientData client;
+    while (1) { // !! BIG TODO: Change this to a select so we can listen for the rooms closing!
+        resetFD_SETParentSide(chatRoomsSockets, serverSocket, &serverSelectfd);
+        maxFD = calculateMaxfdParentSide(chatRoomsSockets, serverSocket);
+        Select(maxFD, &serverSelectfd, NULL, NULL, NULL);
 
-        // !! BIG TODO: Change this to a select so we can listen for the rooms closing!
-        client.clientSocket  = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
-        fprintf(stdout, "\n\n----------------------------------\nClient Found!\n");
+        if (FD_ISSET(serverSocket, &serverSelectfd)) {
+            struct ClientData client;
+            client.clientSocket  = Accept(serverSocket, (struct sockaddr*) &address, &addrlen);
+            fprintf(stdout, "\n\n----------------------------------\nClient Found!\n");
+            Read(client.clientSocket, buffer, 1024 - 1);
+            __uint128_t package;
+            memcpy(&package, buffer, sizeof(package));
+            fprintf(stdout, "unpacking user data\n");
+            unpackage(&package, client.username, client.userPassword, &client.chatRoom);
 
-        Read(client.clientSocket, buffer, 1024 - 1);
-        __uint128_t package;
-        memcpy(&package, buffer, sizeof(package));
-
-        fprintf(stdout, "unpacking user data\n");
-        unpackage(&package, client.username, client.userPassword, &client.chatRoom);
-
-        if (strcmp(password, client.userPassword) != 0) {
-            fprintf(stdout, "User gave wrong password\n");
-            continue;
-            // TODO probably should tell the user this
+            if (strcmp(password, client.userPassword) != 0) {
+                fprintf(stdout, "User gave wrong password\n");
+                continue;
+                // TODO probably should tell the user this
+            }
+            fprintf(stdout, "Correct Password from client!\n");
+            
+            // sends the client to the room by either creating a new room or joining that room
+            if (chatRooms[client.chatRoom] == 0) chatRoomsSockets[client.chatRoom] = createRoom(chatRooms, &client);
+            else if (chatRooms[client.chatRoom] != 0) joinRoom(chatRoomsSockets[client.chatRoom], &client);
         }
-        fprintf(stdout, "Correct Password from client!\n");
+
+        // looks for rooms that are closing
+        for (int i = 0; i < 16; i ++) {
+            if (chatRoomsSockets[i] == -1) continue;
+            if (FD_ISSET(chatRoomsSockets[i], &serverSelectfd)) {
+                char buffer[16];
+                Read(chatRoomsSockets[i], buffer, sizeof(buffer));
+                // fprintf(stdout, "DEBUG: %s\n", buffer);
+
+                if (strcmp("$exit", buffer) == 0) {
+                    Close(chatRoomsSockets[i]);
+                    chatRoomsSockets[i] = -1;
+                    chatRooms[i] = 0;
+                    fprintf(stdout, "chat room %d closed\n", i);
+                }
+            }
+        }
         
-        // sends the client to the room by either creating a new room or joining that room
-        if (chatRooms[client.chatRoom] == 0) chatRoomsSockets[client.chatRoom] = createRoom(&chatRooms, &client);
-        else if (chatRooms[client.chatRoom] != 0) joinRoom(chatRoomsSockets[client.chatRoom], &client);
+        
+        
     }
     // closing the connected socket
     Close(clientSocket);
@@ -71,22 +95,3 @@ int main(int argc, char const* argv[])
     Close(serverSocket);
     return 0;
 }
-
-
-/*
-
-
-
-**** current thinking ****
-
-going to take in clients if a chat room doesn't exist fork the server and create one
-if it does connect that client to that room
-
-
-
-
-
-
-
-
-*/

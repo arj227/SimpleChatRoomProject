@@ -74,7 +74,7 @@ void activeChatRoom(struct ClientData *firstClient, int chatRoomNumber, int sock
                 fprintf(stdout, "%d: client (%s) has sent info\n", chatRoomNumber, clients[i].username);
 
                 char message[64];
-                readFromClient(clients, i, &CNC, message);
+                readFromClient(clients, i, &CNC, message, socketWithParent);
                 sendToClients(clients, i, CNC, message);
                 continue;
             }
@@ -154,7 +154,7 @@ int calculateMaxfd(struct ClientData *clients, int parentSocket, int CNC) {
  * @note This function modifies the clients array and the CNC variable if a client disconnects.
  * @note The function exits the process if there are no more clients in the chat room.
  */
-void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *messageToReturn) {
+void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *messageToReturn, int socketWithParent) {
     int chatRoom = clients[0].chatRoom;
     uint16_t messageLength;
     ssize_t n = Read(clients[whatClient].clientSocket, &messageLength, sizeof(messageLength));
@@ -190,6 +190,8 @@ void readFromClient(struct ClientData *clients, int whatClient, int *CNC, char *
         // fprintf(stdout, "DEBUG: CNC = %d\n", *CNC);
         if (*CNC == 0) {
             fprintf(stdout, "%d: closing room, no more users\n", chatRoom);
+            Send(socketWithParent, "$exit", sizeof("$exit"), 0);
+            // fprintf(stdout, "DEBUG: %d: sent\n", chatRoom);
             exit(0);
         }
     }

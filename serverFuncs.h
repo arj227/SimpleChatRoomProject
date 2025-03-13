@@ -21,6 +21,8 @@ void printLocalIP();
 void unpackage(__uint128_t *package, char* username, char* password, uint8_t *chatRoom);
 
 int createRoom(pid_t *chatRooms, struct ClientData *client);
+void resetFD_SETParentSide(int *chatRoomSockets, int serverSocket, fd_set *selectFDParent);
+int calculateMaxfdParentSide(int *chatRoomSockets, int serverSocket);
 
 
 #endif
