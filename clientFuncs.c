@@ -226,7 +226,7 @@ int readFromServer(int socket) {
             exit(0);
         }
 
-        fprintf(stdout, "\n%s\n--> ", message);
+        fprintf(stdout, "\033[2K\r%s\n--> ", message);
         fflush(stdout);
         return 0;
     } else if (n == 0) {
