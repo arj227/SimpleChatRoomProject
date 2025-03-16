@@ -3,3 +3,4 @@ client
 client.dSYM
 server.dSYM
 build.sh
+.vscode
