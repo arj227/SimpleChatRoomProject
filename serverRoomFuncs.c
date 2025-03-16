@@ -204,7 +204,7 @@ void sendToClients(struct ClientData *clients, int whatClient, int CNC, char *me
     snprintf(finalString, sizeof(finalString), "%s: %s", clients[whatClient].username, message);
 
     struct MessagePacket messagePacket;
-    snprintf(messagePacket.message, sizeof(messagePacket.message), "%s", finalString);
+    snprintf(messagePacket.message, sizeof(messagePacket.message), "%.63s", finalString);
     messagePacket.messageLength = strlen(messagePacket.message) + 1;
 
     for (int i = 0; i < CNC; i ++) {
