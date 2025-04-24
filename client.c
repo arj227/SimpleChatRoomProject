@@ -1,10 +1,10 @@
 /** 
- * @file server.c
+ * @file client.c
  * @brief TCP server programming fun project!
  * 
  * @author Austin James
  * @date Created: 11/4/24
- * @date Last Modified: 3/12/25
+ * @date Last Modified: 4/24/25
  * 
  * @copyright
  * Copyright (c) 2024 Austin James

@@ -4,7 +4,7 @@
  * 
  * @author Austin James
  * @date Created: 11/4/24
- * @date Last Modified: 3/12/25
+ * @date Last Modified: 4/24/25
  * 
  * @copyright
  * Copyright (c) 2024 Austin James
@@ -43,7 +43,7 @@ int main(int argc, char const* argv[])
     fd_set serverSelectfd;
     int maxFD;
 
-    while (1) { // !! BIG TODO: Change this to a select so we can listen for the rooms closing!
+    while (1) {
         resetFD_SETParentSide(chatRoomsSockets, serverSocket, &serverSelectfd);
         maxFD = calculateMaxfdParentSide(chatRoomsSockets, serverSocket);
         Select(maxFD, &serverSelectfd, NULL, NULL, NULL);
@@ -59,9 +59,9 @@ int main(int argc, char const* argv[])
             unpackage(&package, client.username, client.userPassword, &client.chatRoom);
 
             if (strcmp(password, client.userPassword) != 0) {
-                fprintf(stdout, "User gave wrong password\n");
+                fprintf(stdout, "User gave wrong password\n----------------------------------\n\n");
                 continue;
-                // TODO probably should tell the user this
+                // !! TODO probably should tell the user this
             }
             fprintf(stdout, "Correct Password from client!\n");
             

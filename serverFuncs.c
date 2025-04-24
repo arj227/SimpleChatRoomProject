@@ -75,7 +75,7 @@ void parseArgs(int argc, char const *argv[], char *hexArray) {
 
     // checks to see if -i -f is present and then sets it to lowercase
     if (strcmp(argv[1], passwordFlag) != 0) {
-        fprintf(stderr, "no -p flag found\n");
+        fprintf(stderr, "no -p flag found (password for client connection)\n");
         exit(1);
     }
 

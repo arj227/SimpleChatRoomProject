@@ -88,40 +88,56 @@ int userLogIn(char* username, char* password, uint8_t *chatRoom) {
     fprintf(stdout, "username must be 7 or less characters all extra characters will be removed\n");
     printf("Enter username: ");
     if (scanf("%15s", username) != 1) {  // Limit to 15 chars to avoid overflow
-        fprintf(stderr, "Error reading username.\n");
+        fprintf(stderr, "Error reading username.\n\n");
+        discardChars();
         return -1;
     }
 
     printf("Enter password: ");
+    scanf("%15s", password);
+    char* holder;
+    scanf(holder);
     if (scanf("%15s", password) != 1) {  // Limit to 15 chars to avoid overflow
-        fprintf(stderr, "Error reading password.\n");
+        fprintf(stderr, "Error reading password.\n\n");
+        discardChars();
         return -1;
     }
 
-    // Optional: Clear the newline character if there’s one in the buffer
+    // Clear the newline character if there’s one in the buffer
     if (strlen(username) == 32 || strlen(password) == 32) {
-        int ch;
+        int ch;`
         while ((ch = getchar()) != '\n' && ch != EOF); // Flush remaining input
     }
 
     printf("Which room to connect to: ");
     int placeHolder = 0;
     if (scanf("%d", &placeHolder) != 1) {
-        fprintf(stderr, "error reading chatroom selection.\n");
+        fprintf(stderr, "error reading chatroom selection.\n\n");
+        discardChars();
         return -1;
     }
     if (placeHolder > 255) {
-        fprintf(stderr, "chatroom selected out of bounds.\n");
+        fprintf(stderr, "chatroom selected out of bounds.\n\n");
+        discardChars();
         return -1;
     }
     *chatRoom = (u_int8_t) placeHolder;
 
+    discardChars();
+
+    return 0;
+}
+
+/**
+ * @brief discards all characters in the input after inputs are taken in
+ * 
+ * @details helper function for userLogIn()
+ */
+void discardChars() {
     int ch;
     while ((ch = getchar()) != '\n' && ch != EOF) {
         ; // Discard leftover characters.
     }
-
-    return 0;
 }
 
 /**
